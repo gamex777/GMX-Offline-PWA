@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>CSD Local Runtime</title>
+<style>
+  html,body,#game{margin:0;width:100%;height:100%;overflow:hidden;background:#000}
+  body{touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+  #game{position:fixed;inset:0}
+  #game canvas,.ejs_canvas{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;margin:0!important;background:#000!important}
+  .ejs_start_button{opacity:0!important;pointer-events:none!important}
+  .ejs_virtualGamepad_parent,.ejs_virtualGamepad_top,.ejs_virtualGamepad_bottom,
+  .ejs_virtualGamepad_left,.ejs_virtualGamepad_right,.ejs_virtualGamepad_button,
+  .ejs_virtualGamepad_open,.ejs_menu_bar,.ejs_control_bar,.ejs_menu_bar_hidden,
+  [class*="virtualGamepad"],[class*="virtual-gamepad"]{
+    display:none!important;visibility:hidden!important;pointer-events:none!important
+  }
+  #runtime-error{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;color:#ddd;background:#050505;font:14px/1.5 system-ui,sans-serif;text-align:center;z-index:9999}
+  #runtime-error strong{display:block;color:#ff5555;font-size:18px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="game"></div><div id="runtime-error"></div>
+<script>
+(function(){
+  'use strict';
+  var DB_NAME='GMX_GBA_Storage', STORE='library';
+  var params=new URLSearchParams(location.search);
+  var gameId=params.get('game')||'';
+  var requestedSystem=params.get('system')||'';
+  var requestedCore=params.get('core')||'';
+  var started=false, ready=false, pendingInputs={}, cachedAudioContext=null;
+  var IS_IOS=/iP(ad|hone|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+
+  var SYSTEMS={
+    nes:{core:'fceumm',scheme:'nes'}, snes:{core:'snes9x',scheme:'snes'},
+    n64:{core:'parallel_n64',scheme:'n64'}, gb:{core:'gambatte',scheme:'gb'},
+    gbc:{core:'gambatte',scheme:'gb'}, gba:{core:'mgba',scheme:'gba'},
+    nds:{core:'desmume2015',scheme:'nds'}, segaMD:{core:'genesis_plus_gx',scheme:'segaMD'}
+  };
+
+  function fail(message){
+    var box=document.getElementById('runtime-error');
+    box.innerHTML='<div><strong>EMULATOR ERROR</strong>'+String(message).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})+'</div>';
+    box.style.display='flex';
+    try{parent.postMessage({type:'gmx-ejs-error',message:String(message)},'*')}catch(e){}
+  }
+
+  function openDB(){
+    return new Promise(function(resolve,reject){
+      if(!window.indexedDB){reject(new Error('IndexedDB is unavailable. Install and open this PWA from HTTPS.'));return;}
+      var req=indexedDB.open(DB_NAME,2);
+      req.onupgradeneeded=function(e){
+        var db=e.target.result;
+        if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id'});
+        if(!db.objectStoreNames.contains('catalog'))db.createObjectStore('catalog',{keyPath:'id'});
+      };
+      req.onsuccess=function(){resolve(req.result)};
+      req.onerror=function(){reject(req.error||new Error('Could not open the game library'))};
+    });
+  }
+
+  function getGame(db,id){
+    return new Promise(function(resolve,reject){
+      var tx=db.transaction(STORE,'readonly');
+      var req=tx.objectStore(STORE).get(id);
+      req.onsuccess=function(){resolve(req.result||null)};
+      req.onerror=function(){reject(req.error||new Error('Could not read the ROM'))};
+    });
+  }
+
+  function resumeAudio(force){
+    try{
+      if(!cachedAudioContext||force){
+        var e=window.EJS_emulator,m=e&&e.gameManager&&e.gameManager.Module;
+        var list=[e&&e.audioContext,e&&e.gameManager&&e.gameManager.audioContext,m&&m.audioContext,m&&m.SDL2&&m.SDL2.audioContext];
+        cachedAudioContext=null;
+        for(var i=0;i<list.length;i++){if(list[i]&&typeof list[i].resume==='function'){cachedAudioContext=list[i];break}}
+      }
+      if(cachedAudioContext&&cachedAudioContext.state==='suspended')cachedAudioContext.resume().catch(function(){});
+    }catch(e){}
+  }
+
+
+  function applyInput(index,value){
+    var emu=window.EJS_emulator;
+    var gm=emu&&emu.gameManager;
+    if(!gm||typeof gm.simulateInput!=='function')return false;
+    try{gm.simulateInput(0,Number(index),Number(value));return true}catch(e){return false}
+  }
+  function flushInputs(){
+    var ok=false;
+    Object.keys(pendingInputs).forEach(function(k){ok=applyInput(k,pendingInputs[k])||ok});
+    return ok;
+  }
+  function ensureStarted(){
+    if(started)return true;
+    try{
+      var emu=window.EJS_emulator;
+      var button=document.querySelector('.ejs_start_button');
+      if(emu&&button&&typeof emu.startButtonClicked==='function'){
+        emu.startButtonClicked(button);
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+  function flushQueuedInputsOnce(){flushInputs()}
+
+
+  window.GMX_start=function(){return ensureStarted()};
+
+  window.GMX_receiveInput=function(index,value){
+    index=Number(index);value=Number(value);pendingInputs[index]=value;
+    ensureStarted();
+    if(ready)applyInput(index,value);
+  };
+
+  window.GMX_setVolume=function(value){
+    value=Math.max(0,Math.min(1,Number(value)));
+    try{if(window.EJS_emulator&&typeof EJS_emulator.setVolume==='function')EJS_emulator.setVolume(value)}catch(e){}
+    resumeAudio();
+  };
+
+  window.addEventListener('message',function(ev){
+    var d=ev.data||{};
+    if(d.type==='gmx-start')window.GMX_start();
+    if(d.type==='gmx-input')window.GMX_receiveInput(d.index,d.value);
+    if(d.type==='gmx-volume')window.GMX_setVolume(d.value);
+  });
+
+  openDB().then(function(db){return getGame(db,gameId)}).then(async function(game){
+    if(!game||!game.rom)throw new Error('The installed ROM could not be found. Reinstall the game.');
+    var sys=SYSTEMS[game.system]||SYSTEMS[requestedSystem];
+    if(!sys)throw new Error('Unsupported system: '+(game.system||requestedSystem||'unknown'));
+    var core=(game.core&&String(game.core))||requestedCore||sys.core;
+    // Only permit cores actually bundled with this offline PWA.
+    var allowed=['fceumm','snes9x','parallel_n64','gambatte','mgba','desmume2015','genesis_plus_gx'];
+    if(allowed.indexOf(core)===-1)core=sys.core;
+    // Pass ROM bytes directly to EmulatorJS. Blob URLs were responsible for
+    // the generic "Network Error" on some hosted builds and iOS web apps.
+    var romBytes;
+    if(game.rom instanceof ArrayBuffer){
+      romBytes=new Uint8Array(game.rom);
+    }else if(ArrayBuffer.isView(game.rom)){
+      romBytes=new Uint8Array(game.rom.buffer,game.rom.byteOffset||0,game.rom.byteLength);
+    }else if(typeof Blob!=='undefined'&&game.rom instanceof Blob){
+      romBytes=new Uint8Array(await game.rom.arrayBuffer());
+    }else if(game.rom&&game.rom.buffer instanceof ArrayBuffer){
+      romBytes=new Uint8Array(game.rom.buffer);
+    }else{
+      throw new Error('The installed ROM record is unreadable. Reinstall this game.');
+    }
+    if(!romBytes.byteLength)throw new Error('The selected ROM is empty.');
+
+    window.EJS_player='#game';
+    window.EJS_core=core;
+    window.EJS_controlScheme=sys.scheme;
+    window.EJS_gameUrl=romBytes;
+    window.EJS_gameName=game.filename||((game.title||'GMX Game')+(game.extension?'.'+game.extension:''));
+    window.EJS_gameID=(function(text){var h=2166136261>>>0;for(var i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h||1})(String(game.id||game.title||'GMX'));
+    window.EJS_pathtodata='./data/';
+    window.EJS_startOnLoaded=true;
+    window.EJS_volume=0.82;
+    window.EJS_color='#69a7ff';
+    window.EJS_backgroundColor='#000';
+    window.EJS_backgroundBlur=false;
+    window.EJS_browserMode='mobile';
+    window.EJS_noAutoFocus=true;
+    window.EJS_askBeforeExit=false;
+    window.EJS_threads=false; // GitHub Pages cannot provide the required COOP/COEP headers reliably on iOS.
+    window.EJS_forceLegacyCores=false;
+    window.EJS_disableDatabases=IS_IOS;
+    window.EJS_disableAutoLang=true;
+    window.EJS_language='en-US';
+    window.EJS_disableLocalStorage=true;
+    window.EJS_DEBUG_XX=false;
+    window.GMX_RUNTIME_VERSION='14.0.0';
+    window.EJS_defaultOptions={'shader':'disabled'};
+    window.EJS_hideSettings=['shader','fps','slowMotion','fastForward','virtual-gamepad'];
+    window.EJS_Buttons={
+      playPause:false,play:false,pause:false,restart:false,mute:false,unmute:false,
+      settings:false,fullscreen:false,enterFullscreen:false,exitFullscreen:false,
+      saveState:false,loadState:false,screenRecord:false,gamepad:false,cheat:false,
+      volume:false,saveSavFiles:false,loadSavFiles:false,quickSave:false,quickLoad:false,
+      screenshot:false,cacheManager:false,exitEmulation:false
+    };
+
+    window.EJS_ready=function(){
+      ready=true;ensureStarted();resumeAudio(true);flushQueuedInputsOnce();
+      try{parent.postMessage({type:'gmx-ejs-ready'},'*')}catch(e){}
+    };
+    window.EJS_onGameStart=function(){
+      started=true;resumeAudio(true);flushQueuedInputsOnce();
+      try{parent.postMessage({type:'gmx-ejs-started'},'*')}catch(e){}
+    };
+
+    var script=document.createElement('script');
+    script.src='./data/loader.js';
+    script.onerror=function(){fail('The local EmulatorJS runtime is missing. Reinstall the complete PWA package.');};
+    document.head.appendChild(script);
+  }).catch(function(err){fail(err&&err.message?err.message:String(err))});
+})();
+</script>
+</body>
+</html>

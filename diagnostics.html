@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CSD Offline Diagnostics</title>
+<style>
+  :root{color-scheme:dark}body{margin:0;background:#0c0d12;color:#eee;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:24px}
+  main{max-width:860px;margin:auto}.card{background:#161823;border:1px solid #2b2f42;border-radius:14px;padding:18px;margin:14px 0}
+  h1{font-size:24px;margin:0 0 6px}p{color:#aeb4c8}.ok{color:#75e79b}.bad{color:#ff7777}.wait{color:#f4cf6a}
+  table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid #292c3a;text-align:left;word-break:break-all}
+  button,a{display:inline-block;border:0;border-radius:9px;padding:11px 14px;background:#5f95ee;color:white;text-decoration:none;font-weight:700;margin:4px 6px 4px 0}
+  code{background:#090a0e;padding:2px 5px;border-radius:5px}.haptic-test{display:flex;align-items:center;gap:12px;color:#aeb4c8}.haptic-test input{width:52px;height:30px}
+</style>
+</head>
+<body>
+<main>
+  <h1>CSD Offline PWA Diagnostics</h1>
+  <p>Build <strong>14.0.0</strong>. This page verifies the local runtime, decompressor, cores, storage, and service worker.</p>
+  <div class="card">
+    <button id="run">Run checks</button>
+    <a href="./reset.html">Reset app cache</a>
+    <a href="./index.html">Return to emulator</a>
+    <p id="summary" class="wait">Waiting to run.</p>
+  </div>
+  <div class="card"><h2>Browser checks</h2><div id="browser"></div><label class="haptic-test"><input id="haptic-test" type="checkbox" switch><span>Tap this native switch to test the one-tap iPhone haptic.</span></label></div>
+  <div class="card"><h2>Required local files</h2><table><thead><tr><th>File</th><th>Status</th><th>Bytes</th></tr></thead><tbody id="files"></tbody></table></div>
+</main>
+<script>
+(() => {
+  'use strict';
+  const required = [
+    './index.html','./data/loader.js','./data/src/emulator.js','./data/src/GameManager.js','./data/src/compression.js',
+    './data/compression/extract7z.js','./data/compression/extractzip.js','./data/compression/libunrar.js','./data/compression/libunrar.wasm',
+    './data/cores/fceumm-wasm.data','./data/cores/snes9x-wasm.data','./data/cores/parallel_n64-wasm.data',
+    './data/cores/gambatte-wasm.data','./data/cores/mgba-wasm.data','./data/cores/desmume2015-wasm.data','./data/cores/genesis_plus_gx-wasm.data'
+  ];
+  const esc = text => String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  async function checkDB(){
+    return new Promise(resolve => {
+      if(!window.indexedDB){resolve(false);return;}
+      const req=indexedDB.open('GMX_GBA_Storage',2);
+      req.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains('library'))db.createObjectStore('library',{keyPath:'id'});if(!db.objectStoreNames.contains('catalog'))db.createObjectStore('catalog',{keyPath:'id'});};
+      req.onsuccess=()=>{req.result.close();resolve(true);};
+      req.onerror=()=>resolve(false);
+    });
+  }
+  async function run(){
+    const body=document.getElementById('files');
+    const summary=document.getElementById('summary');
+    body.innerHTML='';summary.className='wait';summary.textContent='Checking…';
+    const db=await checkDB();
+    const sw='serviceWorker' in navigator;
+    let controlled=!!navigator.serviceWorker?.controller;
+    document.getElementById('browser').innerHTML=`
+      <p>Secure context: <strong class="${window.isSecureContext?'ok':'bad'}">${window.isSecureContext?'YES':'NO'}</strong></p>
+      <p>IndexedDB: <strong class="${db?'ok':'bad'}">${db?'AVAILABLE':'UNAVAILABLE'}</strong></p>
+      <p>Service workers: <strong class="${sw?'ok':'bad'}">${sw?'SUPPORTED':'UNSUPPORTED'}</strong></p>
+      <p>Page controlled by service worker: <strong class="${controlled?'ok':'wait'}">${controlled?'YES':'NOT YET'}</strong></p>
+      <p>Web vibration API: <strong class="${typeof navigator.vibrate==='function'?'ok':'wait'}">${typeof navigator.vibrate==='function'?'AVAILABLE':'NOT EXPOSED (EXPECTED ON iOS)'}</strong></p>
+      <p>Safari switch haptics: <strong class="wait">DEVICE TEST REQUIRED</strong> — Build 14 overlays native switch controls on discrete buttons.</p>
+      <p>Audio session API: <strong class="${navigator.audioSession?'ok':'wait'}">${navigator.audioSession?'AVAILABLE':'NOT EXPOSED'}</strong></p>
+      <p>Logical CPU cores: <strong>${navigator.hardwareConcurrency||'unknown'}</strong></p>`;
+    let failures=0;
+    for(const path of required){
+      let status='ERROR',size='—',ok=false;
+      try{
+        const res=await fetch(path+'?diag='+Date.now(),{cache:'no-store'});
+        const data=await res.arrayBuffer();
+        ok=res.ok&&data.byteLength>0;status=res.status+' '+res.statusText;size=data.byteLength.toLocaleString();
+      }catch(err){status=err&&err.message?err.message:String(err);}
+      if(!ok)failures++;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td><code>${esc(path)}</code></td><td class="${ok?'ok':'bad'}">${esc(status)}</td><td>${esc(size)}</td>`;
+      body.appendChild(tr);
+    }
+    const browserOK=window.isSecureContext&&db&&sw;
+    const allOK=browserOK&&failures===0;
+    summary.className=allOK?'ok':'bad';
+    summary.textContent=allOK?'All required assets are available.':'Checks failed: '+failures+' required file(s) are missing or unreadable.';
+  }
+  document.getElementById('run').addEventListener('click',run);
+  run();
+})();
+</script>
+</body>
+</html>

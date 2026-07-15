@@ -1,0 +1,4499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>CSD Switch — Offline Multi-System</title>
+<link rel="manifest" href="manifest.json">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CSD">
+<meta name="theme-color" content="#121212">
+<link rel="apple-touch-icon" href="icon-192.png">
+        <!--Add your webpage scripts below-->
+
+<style>
+
+  /* Base PWA Resets */
+  * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+    box-sizing: border-box;
+  }
+
+  html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+  }
+
+  body {
+    height: 100vh;
+    height: 100dvh;
+    width: 100vw;
+    width: 100dvw;
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background-color: #000;
+    overflow: hidden;
+    font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* --- AR / CAMERA BACKGROUND --- */
+  #camera-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  body.camera-active {
+    background-color: transparent;
+  }
+
+  body.camera-active #camera-bg {
+    opacity: 1;
+  }
+
+  /* Slight whole-emulator offset; internal layout and hitboxes remain unchanged. */
+  main {
+    transform: translateX(1vw);
+  }
+
+  /* ============================================================
+     SWITCH SHELL - FIXED FOR IPHONE 5S TO MODERN ENGINE DEVCES
+     ============================================================ */
+  article {
+    --joycon-left: #00c5e2;
+    --joycon-left-highlight: #63e7f5;
+    --joycon-left-mid: #27d3ea;
+    --joycon-left-edge: #0098b6;
+    --joycon-left-shadow: rgba(0, 80, 97, 0.38);
+    --joycon-left-deep-shadow: rgba(0, 45, 56, 0.56);
+    --joycon-right: #ff6658;
+    --joycon-right-highlight: #ff9b8f;
+    --joycon-right-mid: #ff7f73;
+    --joycon-right-edge: #d94c40;
+    --joycon-right-shadow: rgba(142, 34, 24, 0.38);
+    --joycon-right-deep-shadow: rgba(98, 17, 10, 0.56);
+    position: relative;
+    /* Legacy-safe viewpoint bounds math scaling */
+    font-size: min(90vw, 211.4vh);
+    width: 1em;
+    /* Explicitly sizing height by scale factor for engines missing aspect-ratio */
+    height: 0.42563em; 
+    background: transparent;
+  }
+
+  article *:not(:where(#ejs-host, #ejs-host *)),
+  article *:not(:where(#ejs-host, #ejs-host *))::before,
+  article *:not(:where(#ejs-host, #ejs-host *))::after {
+    position: absolute;
+    box-sizing: border-box;
+  }
+
+  :focus {
+    outline: 1px dashed;
+    outline-offset: 2px;
+  }
+
+  .round { border-radius: 50%; }
+
+  .body {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 72.1%;
+    height: 99%;
+  }
+
+  .frame {
+    width: 100%;
+    height: 100%;
+    border-radius: 0.002em;
+    background:
+      radial-gradient(farthest-side, #2f3638 50%, #0000) -1% 3% / 2% 2%,
+      radial-gradient(farthest-side, #2f3638, #0000) 1% -0.75% / 2% 2%,
+      radial-gradient(95% 70% at 0% 0%, #2f3638 85%, #fff3, #f000) 0.5% 0.75% / 1.55% 5.25% no-repeat,
+      radial-gradient(farthest-side, #2f3638 50%, #0000) 101% 3% / 2% 2%,
+      radial-gradient(farthest-side, #2f3638, #0000) 99% -0.75% / 2% 2%,
+      radial-gradient(95% 70% at 100% 0%, #2f3638 85%, #fff3, #f000) 99.5% 0.75% / 1.55% 5.25% no-repeat,
+      linear-gradient(#0000 1%, #fff3 2%, #0000 4%),
+      linear-gradient(#0000 95%, #0008),
+      #2f3638;
+    background-repeat: no-repeat;
+    box-shadow:
+      inset -0.0015em 0 0.00075em -0.00075em #fff5,
+      inset 0.0015em 0 0.00075em -0.00075em #fff6;
+    -webkit-mask:
+      radial-gradient(farthest-side at 100% 100%, #f00 99.99%, #f000) 0 3.9% / 0.6% 1% no-repeat,
+      radial-gradient(farthest-side at 100% 100%, #f00 99.99%, #f000) 1.7% 0% / 0.4% 1% no-repeat,
+      radial-gradient(78.33% 60.33% at 0% 0%, #f000 99%, #f00) 0.5% 0.75% / 1.55% 5.25% no-repeat,
+      radial-gradient(farthest-side at 0% 100%, #f00 99.99%, #f000) 100% 3.9% / 0.6% 1% no-repeat,
+      radial-gradient(farthest-side at 0% 100%, #f00 99.99%, #f000) 98.3% 0% / 0.4% 1% no-repeat,
+      radial-gradient(78.33% 60.33% at 100% 0%, #f000 99%, #f00) 99.5% 0.75% / 1.55% 5.25% no-repeat,
+      linear-gradient(#0000 4.7%, #000 0),
+      linear-gradient(90deg,#0000 2%, #000 0 98%, #0000 0);
+  }
+
+  .frame::before {
+    content: "";
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 94%;
+    height: 93%;
+    border-radius: 0.011em;
+    border: 0.0003em solid #000;
+    box-shadow:
+      0 0.00045em 0.001em #fff8,
+      inset 0 0.0006em 0.0015em -0.00025em #000,
+      inset 0 0.0007em 0.0015em -0.00025em #fffc;
+    background:
+      radial-gradient(circle at 32.7% 98%, #0e0e0e 0.9%, #000 0 1%, #0e0e0e 0 1.2%, #0000 0),
+      linear-gradient(#0e0e0e 0 0) 32.33% 100% / 2.1% 2% no-repeat,
+      #000;
+  }
+
+  /* --- SCREEN & 3D BOOT SEQUENCE --- */
+  .screen {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 77.5%;
+    border-radius: 0.001em;
+    background: #292d30;
+    box-shadow: inset 0 0.0015em 0.005em -0.0015em #000c;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+    position: absolute;
+  }
+
+  .screen.power-off {
+    background: #020202 !important;
+    box-shadow: inset 0 0 20px #000 !important;
+  }
+
+  .boot-sequence {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: black;
+    font-family: 'Play', sans-serif;
+    transform-style: preserve-3d;
+    perspective: 0.25em; 
+    overflow: hidden;
+    opacity: 0; 
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 100;
+  }
+
+  .screen.is-booting .boot-sequence {
+    opacity: 1;
+  }
+
+  .boot-inner {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex; flex-wrap: wrap; align-content: flex-start;
+    padding: 1%; padding-top: 10%;
+    transform-style: preserve-3d;
+  }
+
+  .screen.is-booting .boot-inner {
+    animation: boot-enter 8s cubic-bezier(1,0,.4,1) forwards;
+  }
+
+  .boxes-wrapper {
+    display: flex; flex-wrap: wrap; width: 100%; height: 100%;
+    transform-style: preserve-3d;
+  }
+
+  .box-container {
+    width: calc(100% / 14);
+    padding: 1%;
+    position: relative;
+    transform-style: preserve-3d;
+  }
+
+  .box {
+    width: 100%; padding-top: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+  }
+
+  .box .top, .box .bottom, .box .left, .box .right {
+    position: absolute; 
+    width: 100%; height: 100%;
+    box-shadow: inset 0 0 0.005em rgba(0, 255, 255, 0.07);
+  }
+
+  .box .top { height: 0.15em; bottom: 100%; left: 0; transform-origin: 100% 100%; transform: rotateX(90deg); background: linear-gradient(to top, rgba(155,166,198,.9), rgba(0,0,0,0)); }
+  .box .bottom { height: 0.15em; top: 100%; left: 0; transform-origin: 0% 0%; transform: rotateX(-90deg); background: linear-gradient(to bottom, rgba(99,108,148,.9), rgba(0,0,0,0)); }
+  .box .left { width: 0.15em; top: 0; right: 100%; transform-origin: 100% 100%; transform: rotateY(-90deg); background: linear-gradient(to left, rgba(125,136,178,.9), rgba(0,0,0,0)); }
+  .box .right { width: 0.15em; top: 0; left: 100%; transform-origin: 0% 0%; transform: rotateY(90deg); background: linear-gradient(to right, rgba(125,136,178,.9), rgba(0,0,0,0)); }
+
+  .boot-content {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    text-align: center; color: white; z-index: 200;
+  }
+  .screen.is-booting .boot-content {
+    animation: boot-content-bg 8s forwards;
+  }
+  .boot-content p {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0;
+  }
+  .boot-content .copyright {
+    font-size: 0.015em; text-shadow: #000 0px 0px 2px; opacity: 0;
+  }
+  .screen.is-booting .boot-content .copyright {
+    animation: boot-copyright 8s linear forwards;
+  }
+  .boot-content .branding { font-size: 0.04em; opacity: 0; }
+  .screen.is-booting .boot-content .branding {
+    animation: boot-branding 8s cubic-bezier(0,.74,.46,1) forwards;
+  }
+  .boot-content .branding .is-small { font-size: .3em; vertical-align: super; }
+
+  .particles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 200; }
+  .particles span { display: block; width: 1px; height: 1px; background: white; position: absolute; border-radius: 50%; opacity: 0; }
+  .particles span:nth-child(1) { left: 70%; top: 70%; box-shadow: 0 0 0.01em 0.005em rgba(255,0,0,.8); }
+  .particles span:nth-child(2) { left: 70%; top: 50%; box-shadow: 0 0 0.01em 0.005em rgba(0,255,0,.8); }
+  .particles span:nth-child(3) { left: 15%; top: 75%; box-shadow: 0 0 0.01em 0.005em rgba(0,0,255,.8); }
+  
+  .screen.is-booting .particles span:nth-child(1) { animation: p1 4s cubic-bezier(0,.74,.46,1) infinite; }
+  .screen.is-booting .particles span:nth-child(2) { animation: p2 4s cubic-bezier(0,.74,.46,1) infinite; }
+  .screen.is-booting .particles span:nth-child(3) { animation: p3 4s cubic-bezier(0,.74,.46,1) infinite; }
+
+  @keyframes boot-enter {
+    0% { transform: rotate(-20deg); }
+    60%, 100% { transform: rotate(100deg) scale(4); }
+  }
+  @keyframes boot-copyright {
+    0%, 5% { opacity: 0; }
+    10%, 35% { opacity: 1; }
+    40%, 100% { opacity: 0; }
+  }
+  @keyframes boot-content-bg {
+    0% { background-color: black; }
+    5%, 43% { background: transparent; }
+    48%, 100% { background-color: black; }
+  }
+  @keyframes boot-branding {
+    0%, 65% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.5); }
+    68%, 93% { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1); }
+    96%, 100% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.5); }
+  }
+  @keyframes p1 { 0% {opacity:0; transform:none;} 20%, 80% {opacity:1;} 100% {transform: translate(-0.15em, -0.1em); opacity:0;} }
+  @keyframes p2 { 0% {opacity:0; transform:none;} 20%, 80% {opacity:1;} 100% {transform: translate(-0.2em, 0.05em); opacity:0;} }
+  @keyframes p3 { 0% {opacity:0; transform:none;} 20%, 80% {opacity:1;} 100% {transform: translate(0.25em, -0.1em); opacity:0;} }
+
+  /* --- VOLUME OSD --- */
+  #volume-osd {
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    background: rgba(0,0,0,0.75);
+    background-color: rgba(0,0,0,0.75);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    border-radius: 15px;
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  #volume-osd.show { opacity: 1; }
+  #volume-osd svg { width: 16px; height: 16px; color: #fff; }
+  .vol-track { width: 80px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; overflow: hidden; }
+  #vol-fill { width: 100%; height: 100%; background: #00c5e2; transition: width 0.1s ease; }
+
+  /* --- CONTROLLERS --- */
+  .controller {
+    opacity: 10.7;
+    --color: var(--joycon-left);
+    --color-highlight: var(--joycon-left-highlight);
+    --color-mid: var(--joycon-left-mid);
+    --color-edge: var(--joycon-left-edge);
+    --color-shadow: var(--joycon-left-shadow);
+    --color-deep-shadow: var(--joycon-left-deep-shadow);
+    width: 13.85%;
+    height: 99%;
+    bottom: 0;
+    left: 0;
+    border-radius: 0.09em 0.004em 0.002em 0.09em;
+    background: linear-gradient(180deg, var(--color-highlight) 0%, var(--color-mid) 15%, var(--color) 48%, var(--color-edge) 100%);
+    box-shadow:
+      0.02em 0.0105em 0 -0.0123em #020100,
+      inset 0.001em -0.009em 0.01em -0.003em var(--color-shadow),
+      inset 0.035em 0 0.025em -0.025em #0002,
+      inset -0.002em 0 0.004em var(--color-mid),
+      inset 0.006em 0.016em 0.009em -0.008em var(--color-highlight),
+      inset 0 0.017em 0.005em -0.008em rgba(255,255,255,0.92),
+      inset 0.005em -0.005em 0.012em -0.004em var(--color-deep-shadow),
+      inset 0 -0.02em 0.028em -0.018em var(--color-edge);
+  }
+
+  .controller::before {
+    content: "";
+    width: 0.00275em;
+    height: 0.00275em; /* iOS 12 Fix */
+    background: #393537;
+    box-shadow: inset 0.0001em 0.00075em 0.0004em #fff3;
+    left: 100%;
+    top: 97.75%;
+    border-radius: 50%;
+  }
+
+  .controller.right {
+    --color: var(--joycon-right);
+    --color-highlight: var(--joycon-right-highlight);
+    --color-mid: var(--joycon-right-mid);
+    --color-edge: var(--joycon-right-edge);
+    --color-shadow: var(--joycon-right-shadow);
+    --color-deep-shadow: var(--joycon-right-deep-shadow);
+    left: auto;
+    right: 0;
+    border-radius: 0.004em 0.09em 0.09em 0.002em;
+    box-shadow:
+      -0.02em 0.0105em 0 -0.0123em #020100,
+      inset -0.001em -0.009em 0.01em -0.003em var(--color-shadow),
+      inset -0.035em 0 0.025em -0.025em #0002,
+      inset 0.002em 0 0.004em var(--color-mid),
+      inset -0.006em 0.016em 0.009em -0.008em var(--color-highlight),
+      inset 0 0.017em 0.005em -0.008em rgba(255,255,255,0.92),
+      inset -0.01em 0 0.012em -0.004em var(--color-deep-shadow),
+      inset 0 -0.02em 0.028em -0.018em var(--color-edge);
+  }
+
+  .controller.right::before {
+    left: auto;
+    right: 100%;
+    box-shadow: inset -0.0001em 0.00075em 0.0004em #fff3;
+  }
+
+
+  /* Joy-Con docking sequence: replayed whenever portrait returns to landscape. */
+  article.joycons-arriving .controller {
+    pointer-events: none;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  article.joycons-arriving .controller.left {
+    animation: csdJoyconDockLeft 760ms cubic-bezier(.16, 1, .3, 1) both;
+  }
+
+  article.joycons-arriving .controller.right {
+    animation: csdJoyconDockRight 800ms 55ms cubic-bezier(.16, 1, .3, 1) both;
+  }
+
+  @keyframes csdJoyconDockLeft {
+    0%   { transform: translate3d(0, -118%, 0); opacity: .12; }
+    72%  { transform: translate3d(0, 2.2%, 0); opacity: 1; }
+    88%  { transform: translate3d(0, -.65%, 0); }
+    100% { transform: translate3d(0, 0, 0); opacity: 1; }
+  }
+
+  @keyframes csdJoyconDockRight {
+    0%   { transform: translate3d(0, 118%, 0); opacity: .12; }
+    72%  { transform: translate3d(0, -2.2%, 0); opacity: 1; }
+    88%  { transform: translate3d(0, .65%, 0); }
+    100% { transform: translate3d(0, 0, 0); opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    article.joycons-arriving .controller.left,
+    article.joycons-arriving .controller.right {
+      animation-duration: .01ms !important;
+      animation-delay: 0ms !important;
+    }
+  }
+
+  /* --- SURFACE BUMPERS --- */
+  .bumper {
+    position: absolute;
+    width: 32%;
+    height: 3%;
+    background: #25282a;
+    z-index: 10;
+    cursor: pointer;
+    transition: all 0.05s ease;
+    box-shadow:
+      inset 0 0.001em 0.001em #000a,
+      0 0.001em 0.001em #fff2;
+    border-radius: 80% 80% 40% 40% / 150% 150% 60% 60%;
+  }
+
+  .bumper::after {
+    content: "";
+    position: absolute;
+    top: 15%; left: 10%; width: 80%; height: 70%;
+    background: linear-gradient(to bottom, #4a4e52, #2a2e31);
+    border-radius: 70% 70% 30% 30% / 120% 120% 40% 40%;
+    box-shadow: 0 0.001em 0.001em #0006;
+  }
+
+  .l-bumper { top: 5.5%; left: 2.5%; transform: rotate(-45deg); }
+  .r-bumper { top: 5.5%; right: 2.5%; left: auto; transform: rotate(45deg); }
+
+  .bumper::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #888;
+    font-family: 'Play', Helvetica, sans-serif;
+    font-size: 0.011em;
+    font-weight: bold;
+    z-index: 20;
+    text-shadow: 0 -0.0005em 0 #000;
+  }
+
+  .l-bumper::before { content: "L"; }
+  .r-bumper::before { content: "R"; }
+
+  .bumper.active::after {
+    filter: brightness(0.6);
+    transform: translateY(0.001em);
+  }
+
+  /* --- OTHER BUTTONS --- */
+  button {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    font-size: inherit; /* THE GOLDEN FIX FOR iOS 12 */
+    font-family: inherit;
+    padding: 0;
+    transition: filter 0.05s ease, transform 0.05s ease;
+    cursor: pointer;
+    z-index: 10;
+  }
+
+  button.active:not(.bumper) {
+    filter: brightness(0.7);
+    transform: scale(0.95);
+  }
+
+  .minus {
+    --c: #404040;
+    width: 17%;
+    height: 1.8%;
+    background: var(--c);
+    top: 8.9%;
+    right: 7.7%;
+    border-radius: 0.0015em;
+    border: 0.001em solid var(--color-shadow);
+    box-shadow:
+      inset 0.00075em -0.00075em 0.0005em #0008,
+      inset -0.0006em 0 0.0005em #0003,
+      inset 0 0.00075em 0.0005em #fff6,
+      0 0.002em 0.0025em -0.001em #0006;
+  }
+
+  .plus { left: 7.7%; right: auto; }
+
+  .plus::before {
+    content: "";
+    width: 35%;
+    height: 400%;
+    background: var(--c);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 0.0015em;
+    border: 0.001em solid var(--color-shadow);
+    box-shadow:
+      0 0.004em 0.02em var(--color-shadow),
+      inset -0.0006em 0 0.0004em #0007,
+      inset 0.0006em 0 0.0004em #0007,
+      inset 0 -0.001em 0.0005em -0.0002em #0008,
+      inset 0 0.00075em 0.0005em -0.0002em #fff6;
+  }
+
+  .plus::after {
+    content: "";
+    width: 35%;
+    height: 0.00824em; /* iOS 12 Fix */
+    background:
+      radial-gradient(circle at 0 0, #834 20%, #0000 20% 35%, var(--c) 0) 0 0 / 50% 50%,
+      conic-gradient(at 0 0, #000, #fff) 1% 1% / 40% 40%,
+      radial-gradient(circle at 100% 0, #834 20%, #0000 20% 35%, var(--c) 0) 100% 0 / 50% 50%,
+      conic-gradient(at 100% 0, #fff 25%, #000) 99% 1% / 40% 40%,
+      radial-gradient(circle at 0% 100%, #834 20%, #0000 20% 35%, var(--c) 0) 1% 99% / 50% 50%,
+      radial-gradient(at 0% 100%,  #0008, #0000) 1% 99% / 40% 40%,
+      radial-gradient(circle at 100% 100%, #834 20%, #0000 20% 35%, var(--c) 0) 99% 99% / 50% 50%,
+      radial-gradient(at 100% 100%,  #0008, #0000) 100% 99% / 40% 40%,
+      var(--c);
+    background-repeat: no-repeat;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* --- JOYSTICK PHYSICS --- */
+  .mushroom {
+    width: 47%;
+    height: 0.0651em; /* iOS 12 Fix */
+    border: 0.001em solid var(--color-shadow);
+    top: 17.5%;
+    left: 30%;
+    background:
+      radial-gradient(circle at 50% 0, #6669, #6660 60%),
+      #2a2e31;
+    box-shadow:
+      inset 0 0.0001em 0.00125em -0.0005em var(--color),
+      inset 0 0.003em 0.003em #0004,
+      inset 0 -0.005em 0.003em #0006,
+      0 -0.0009em 0.001em 0.001em #0003,
+      0 0.00075em 0.001em 0.001em #0003,
+      0 0.01em 0.01em -0.0025em #0004,
+      0 0.025em 0.035em var(--color-shadow);
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .mushroom.dragging {
+    transition: none;
+    filter: brightness(0.8);
+  }
+
+  .right .mushroom { top: 61.5%; left: 23.25% }
+
+  .mushroom::before {
+    content: "";
+    width: 80%;
+    height: 80%; /* iOS 12 Fix */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 0, #6669, #6660 60%);
+    box-shadow:
+      inset 0 0 0.001em #0008,
+      inset 0 0.002em 0.002em #0008,
+      inset 0 -0.001em 0.001em 0.001em #fff4,
+      0 0.001em 0.001em #fff2,
+      0 -0.0007em 0.001em 0.0006em #0008,
+      0 -0.0025em 0.0015em 0.0006em #fff2
+  }
+
+  .mushroom::after {
+    content: "";
+    width: 95%;
+    height: 95%; /* iOS 12 Fix */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background:
+      linear-gradient(90deg, #000, #0000 20% 80%, #000) 50% 0 / 3% 12%,
+      linear-gradient(#000 5%, #444 15% 30%, #666 50%, #3c3c3c, #484848) 50% 0 / 3% 12%,
+      linear-gradient(#0000 30% 90%, #fff) 0% 50% / 12% 3%,
+      linear-gradient(#000, #0000 30% 70%, #000) 0% 50% / 12% 3%,
+      linear-gradient(90deg, #fff4, #222 10% 50%, #444) 0% 50% / 12% 3%,
+      linear-gradient(#0000 30% 90%, #fff) 100% 50% / 12% 3%,
+      linear-gradient(#000, #0000 30% 70%, #000) 100% 50% / 12% 3%,
+      linear-gradient(to left, #fff4, #222 10% 50%, #444) 100% 50% / 12% 3%,
+      linear-gradient(90deg, #000, #0000 20% 80%, #000) 50% 100% / 3% 12%,
+      linear-gradient(to top, #fff4, #111 15% 50%, #444) 50% 100% / 3% 12%,
+      #f000;
+    background-repeat: no-repeat;
+  }
+
+  .direction {
+    display: grid;
+    place-items: center;
+    width: 23%;
+    height: 0.03185em; /* iOS 12 Fix */
+    border: 0.0007em solid var(--color-shadow);
+    background:
+      linear-gradient(#fff2, #fff0),
+      #35393c;
+    box-shadow:
+      0 0.002em 0.007em var(--color-shadow),
+      inset 0 0.0001em 0.0015em -0.0005em var(--color),
+      inset 0 0 0.0005em 0.001em #323439,
+      inset 0 0.002em 0.001em 0.0002em #def5,
+      inset 0 -0.001em 0.0005em 0.0002em #000,
+      inset 0 -0.001em 0.001em 0.002em #000c
+  }
+
+  .direction::before {
+    font-size: 0.0175em;
+    font-family: Helvetica, sans-serif;
+    color: #fffa;
+  }
+
+  .arrow::before,
+  .arrow::after {
+    content: "";
+    width: 40%;
+    height: 40%; /* iOS 12 Fix */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: #252525;
+    -webkit-clip-path: polygon(52% -2%, 100% 80%, 0 80%, 48% -2%);
+    clip-path: polygon(52% -2%, 100% 80%, 0 80%, 48% -2%);
+  }
+
+  .arrow::before {
+    top: 51.5%;
+    background: #fff3;
+    filter: blur(0.01em);
+  }
+
+  .arrow.right::before, .arrow.right::after { transform: translate(-50%, -50%) rotate(90deg); }
+  .arrow.left::before, .arrow.left::after { transform: translate(-50%, -50%) rotate(-90deg) ; }
+  .arrow.down::before, .arrow.down::after { transform: translate(-50%, -50%) rotate(180deg) ; }
+
+  .direction.up { top: 58%; left: 41.9%; }
+  .direction.down { top: 72.85%; left: 41.9%; }
+  .direction.left { left: 18.25%; top: 65.5%; }
+  .direction.right { left: 65.75%; top: 65.5%; }
+
+  .direction.x { top: 14%; left: 35%; }
+  .direction.x::before { content: "X"; }
+
+  .direction.y { top: 21.5%; left: 11.25% }
+  .direction.y::before { content: "Y"; }
+
+  .direction.a { top: 21.5%; left: 59% }
+  .direction.a::before { content: "A"; }
+
+  .direction.b { top: 29%; left: 35% }
+  .direction.b::before { content: "B"; }
+
+  .menu {
+    width: 19.35%;
+    height: 0.0268em; /* iOS 12 Fix */
+    border: 0.0009em solid var(--color-shadow);
+    top: 84.75%;
+    left: 60.5%;
+    border-radius: 0.003em;
+    background: #464b50;
+    box-shadow:
+      inset 0 0.001em 0.001em -0.0005em #fff6,
+      inset 0 -0.001em 0.001em -0.0005em #0006
+  }
+
+  .menu::before {
+    content: "";
+    width: 67%;
+    height: 67%; /* iOS 12 Fix */
+    background: #33393c;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    box-shadow:
+      inset 0 0.0009em 0.00075em #0008,
+      0 0.0008em 0.00075em #fff5
+  }
+
+  .volume {
+    width: 8.5%;
+    height: 0.7%;
+    background: linear-gradient(#444, #222);
+    left: 13.3%;
+    top: -0.6%;
+    border-radius: 0.0005em 0.0005em 0 0;
+    -webkit-clip-path: polygon(-20% -100%, 32% -100%, 32% 0, 33% 35%, 66% 35%, 67% 0%, 67% -100%, 110% -100%, 110% 120%, -20% 120%);
+    clip-path: polygon(-20% -100%, 32% -100%, 32% 0, 33% 35%, 66% 35%, 67% 0%, 67% -100%, 110% -100%, 110% 120%, -20% 120%);
+    z-index: 10;
+    transition: filter 0.1s ease;
+  }
+
+  .home {
+    top: 83.85%;
+    left: 17.5%;
+    display: grid;
+    place-items: center;
+    width: 25%;
+    height: 0.03463em; /* iOS 12 Fix */
+    border: 0.0007em solid var(--color-shadow);
+    background:
+      linear-gradient(#0001, #0005),
+      radial-gradient(#0000 52.5%, #9c9a9a 0),
+      #404547;
+  }
+
+  .home::before {
+    content: "";
+    top: 23%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 50%;
+    height: 24.5%;
+    background: conic-gradient(at 50% 0, #0000 132deg, #010202 0 228deg, #0000 0);
+    box-shadow: 0 0.00015em 0.0001em -0.00008em #fff
+  }
+
+  .home::after {
+    content: "";
+    color: #010202;
+    top: 46%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 39%;
+    height: 24.5%;
+    box-shadow:
+      inset -0.004em 0,
+      inset 0.004em 0,
+      inset 0 -0.004em 0,
+      0 0.00015em 0.0001em -0.00008em #fff
+  }
+
+  /* ============================================================
+     GBA OS — wrapped in #os-scale-wrapper
+     ============================================================ */
+  #os-scale-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 441px;
+    height: 294px;
+    transform-origin: top left;
+    transform: scale(1);
+    overflow: hidden;
+  }
+
+  #os-scale-wrapper #xmb-clock,
+  #os-scale-wrapper .battery-fill,
+  #os-scale-wrapper .xmb-col,
+  #os-scale-wrapper .xmb-icon,
+  #os-scale-wrapper .xmb-sub,
+  #os-scale-wrapper .box-art,
+  #os-scale-wrapper .game-title,
+  #os-scale-wrapper .popup-box,
+  #os-scale-wrapper .popup-box h3,
+  #os-scale-wrapper .popup-box > div,
+  #os-scale-wrapper .file-name,
+  #os-scale-wrapper #game-canvas {
+    position: relative;
+  }
+
+  .xmb-bg {
+    /* PSP/XMB-inspired screen layer only — console shell remains untouched */
+    --wave-color: 255, 255, 255;
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    overflow: hidden;
+    transition: opacity 0.8s ease;
+    background:
+      radial-gradient(circle at 78% 14%, rgba(117, 163, 255, 0.22), transparent 28%),
+      radial-gradient(circle at 16% 88%, rgba(95, 62, 195, 0.16), transparent 36%),
+      linear-gradient(155deg, #263f90 0%, #1a2c72 35%, #111b4c 70%, #0a1234 100%);
+    z-index: 1;
+  }
+
+  .xmb-bg::before {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.09) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 65% 35%, rgba(255,255,255,0.08) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 80% 75%, rgba(255,255,255,0.06) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 35% 78%, rgba(255,255,255,0.07) 0 1px, transparent 1.5px);
+    background-size: 73px 63px, 97px 87px, 121px 111px, 151px 141px;
+    opacity: 0.55;
+    animation: xmbStarsDrift 24s linear infinite;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .xmb-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.03), rgba(0,0,0,0.12) 68%, rgba(0,0,0,0.28));
+    z-index: 6;
+    pointer-events: none;
+  }
+
+  .xmb-wallpaper {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity 0.45s ease;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .xmb-wallpaper.has-wallpaper { opacity: 1; }
+
+  .xmb-wallpaper::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to right, rgba(8,14,42,0.42), rgba(8,14,42,0.12) 58%, rgba(8,14,42,0.26)),
+      linear-gradient(to bottom, rgba(0,0,0,0.04), rgba(0,0,0,0.24));
+    pointer-events: none;
+  }
+
+  .xmb-game-bg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center right;
+    opacity: 0;
+    transition: opacity 0.45s ease, filter 0.45s ease;
+    filter: saturate(0.82) brightness(0.82);
+    z-index: 2;
+  }
+
+  .xmb-sheen {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(112deg, transparent 0 31%, rgba(255,255,255,0.035) 42%, transparent 52%),
+      radial-gradient(ellipse at 50% 58%, rgba(255,255,255,0.055), transparent 57%);
+    mix-blend-mode: screen;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .wave-line {
+    position: absolute;
+    width: 156%;
+    height: 112px;
+    left: -28%;
+    border-radius: 50%;
+    background: transparent;
+    border-top: 1.5px solid rgba(var(--wave-color), 0.33);
+    box-shadow:
+      0 -1px 7px rgba(var(--wave-color), 0.16),
+      inset 0 10px 26px rgba(var(--wave-color), 0.025);
+    filter: drop-shadow(0 -1px 4px rgba(var(--wave-color), 0.18));
+    opacity: 0.82;
+    transform-origin: center center;
+    pointer-events: none;
+    z-index: 3;
+    animation: xmbWaveFloat 8s ease-in-out infinite alternate;
+  }
+
+  .wave-line.wave-1 { top: 42%; transform: rotate(-7deg) scaleY(0.72); animation-duration: 8.5s; }
+  .wave-line.wave-2 { top: 48%; transform: rotate(5deg) scaleY(0.95); opacity: 0.55; animation-duration: 10.5s; animation-direction: alternate-reverse; }
+  .wave-line.wave-3 { top: 52%; transform: rotate(-2deg) scaleY(1.18); opacity: 0.36; animation-duration: 12s; }
+  .wave-line.wave-4 { top: 57%; transform: rotate(8deg) scaleY(0.78); opacity: 0.26; animation-duration: 14s; animation-direction: alternate-reverse; }
+
+  .wave-line::after {
+    content: '';
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    top: -3px;
+    height: 5px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, transparent, rgba(var(--wave-color), 0.18), rgba(255,255,255,0.22), rgba(var(--wave-color), 0.14), transparent);
+    filter: blur(4px);
+  }
+
+  @keyframes xmbWaveFloat {
+    0% { margin-left: -10px; margin-top: -4px; }
+    50% { margin-left: 8px; margin-top: 3px; }
+    100% { margin-left: 18px; margin-top: -2px; }
+  }
+
+  @keyframes xmbStarsDrift {
+    from { transform: translate3d(0,0,0); }
+    to { transform: translate3d(56px,34px,0); }
+  }
+
+  #xmb-ui {
+    position: absolute;
+    width: 100%; height: 100%;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    color: #fff;
+  }
+
+  #screen.os-ready .xmb-bg { opacity: 1; }
+  #screen.os-ready #xmb-ui { opacity: 1; pointer-events: auto; }
+
+  #xmb-status-left {
+    position: absolute;
+    top: 7.5%;
+    left: 5.2%;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'Play', 'Century Gothic', sans-serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    opacity: 0.72;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.65);
+  }
+
+  #xmb-status-left .status-orb {
+    position: relative;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px rgba(255,255,255,0.8);
+  }
+
+  #xmb-header {
+    position: absolute;
+    top: 7.2%;
+    right: 5%;
+    font-size: 0.67rem;
+    font-weight: 500;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    opacity: 0.92;
+  }
+
+  .battery-icon {
+    width: 20px;
+    height: 9px;
+    border: 1px solid rgba(255,255,255,0.95);
+    border-radius: 1px;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.45);
+  }
+  .battery-icon::after {
+    content: '';
+    position: absolute;
+    right: -3px;
+    top: 2px;
+    width: 2px;
+    height: 3px;
+    background: #fff;
+    border-radius: 0 1px 1px 0;
+  }
+  .battery-fill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255,255,255,0.86), #fff);
+    border: 1px solid transparent;
+    background-clip: content-box;
+  }
+
+  #xmb-grid {
+    position: absolute;
+    top: 35.8%;
+    left: 50%;
+    display: flex;
+    align-items: flex-start;
+    gap: 92px;
+    transition: transform 0.2s cubic-bezier(0.2, 0.82, 0.2, 1);
+    will-change: transform;
+  }
+
+  .xmb-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    min-width: 74px;
+    transition: opacity 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+    opacity: 0.34;
+    transform: scale(0.84);
+    filter: blur(0.15px);
+  }
+
+  .xmb-col.active-col {
+    opacity: 1;
+    transform: scale(1);
+    filter: none;
+  }
+
+  .xmb-main {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 52px;
+    height: 52px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .xmb-icon {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    fill: #fff;
+    opacity: 0.86;
+    filter: drop-shadow(0 3px 5px rgba(0,0,0,0.72));
+    transition: width 0.2s ease, height 0.2s ease, opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+  }
+
+  .xmb-main span {
+    position: absolute;
+    left: 50%;
+    top: 58px;
+    transform: translateX(-50%) translateY(3px);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.9);
+  }
+
+  .active-col .active-item.xmb-main .xmb-icon {
+    width: 46px;
+    height: 46px;
+    opacity: 1;
+    transform: translateY(-2px);
+    filter:
+      drop-shadow(0 0 5px rgba(255,255,255,0.85))
+      drop-shadow(0 6px 9px rgba(0,0,0,0.7));
+  }
+
+  .active-col .active-item.xmb-main span {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .xmb-sub {
+    position: relative;
+    width: 172px;
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 4px 8px 4px 24px;
+    border-radius: 3px;
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.005em;
+    opacity: 0;
+    color: rgba(255,255,255,0.88);
+    text-shadow: 0 2px 5px rgba(0,0,0,0.9);
+    transition: opacity 0.18s ease, transform 0.18s ease, color 0.18s ease, text-shadow 0.18s ease;
+    white-space: nowrap;
+  }
+
+  .xmb-sub::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    transform: translateY(-50%) scale(0.6);
+    background: rgba(255,255,255,0.58);
+    opacity: 0;
+    box-shadow: 0 0 6px rgba(255,255,255,0.35);
+    transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .active-col .xmb-sub { opacity: 0.42; }
+
+  .active-col .active-item.xmb-sub {
+    opacity: 1;
+    color: #fff;
+    transform: translateX(9px) scale(1.04);
+    font-weight: 500;
+    text-shadow: 0 0 7px rgba(255,255,255,0.42), 0 2px 6px rgba(0,0,0,0.9);
+  }
+
+  .active-col .active-item.xmb-sub::before {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+    box-shadow: 0 0 8px rgba(255,255,255,0.82);
+  }
+
+  .game-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 44px;
+    padding-left: 8px;
+  }
+
+  .game-item::before { display: none; }
+
+  .box-art {
+    position: relative;
+    width: 58px;
+    height: 38px;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 2px;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.65);
+    opacity: 0.72;
+  }
+
+  .active-col .active-item.game-item .box-art {
+    border-color: rgba(255,255,255,0.96);
+    box-shadow: 0 0 10px rgba(255,255,255,0.45), 0 7px 14px rgba(0,0,0,0.75);
+    transform: scale(1.08);
+    opacity: 1;
+  }
+
+  .game-details {
+    position: absolute;
+    left: 76px;
+    top: 50%;
+    transform: translateY(-50%) translateX(-2px);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .active-col .active-item.game-item .game-details {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+
+  .game-title {
+    position: relative;
+    max-width: 118px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.73rem;
+    font-weight: 600;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.95);
+  }
+
+  #xmb-help {
+    position: absolute;
+    right: 5%;
+    bottom: 6.5%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.56rem;
+    color: rgba(255,255,255,0.78);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.85);
+  }
+
+  #xmb-help span {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  #xmb-help b {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    border: 1px solid rgba(255,255,255,0.75);
+    border-radius: 50%;
+    font-size: 0.48rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(0,0,0,0.12);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+  }
+
+  #sys-msg {
+    position: absolute;
+    bottom: 15%;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    padding: 4px 9px;
+    border-radius: 2px;
+    background: rgba(0,0,0,0.16);
+    font-size: 0.58rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 50;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.82);
+    text-shadow: 0 2px 5px rgba(0,0,0,0.9);
+    white-space: nowrap;
+  }
+
+  #sys-msg[style*="opacity: 1"] { transform: translateX(-50%) translateY(0); }
+
+  #game-area {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 30;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+  }
+  #screen.game-running #game-area { opacity: 1; pointer-events: auto; transition: none; }
+  #screen.game-running #xmb-ui { opacity: 0; pointer-events: none; }
+  #screen.game-running .xmb-bg { opacity: 0; }
+  #game-canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: pixelated;
+    display: block;
+  }
+
+  /* Same-document core host: removes the iframe/audio-activation boundary on iOS. */
+  #ejs-host {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    overflow: hidden;
+    background: #000;
+    contain: layout paint;
+    isolation: isolate;
+  }
+  #game-area.multi-core #ejs-host { display: block; }
+  #game-area.multi-core #game-canvas { display: none; }
+  #ejs-host, #ejs-host > div, #ejs-host .ejs_parent {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000 !important;
+    overflow: hidden !important;
+  }
+  #ejs-host canvas, #ejs-host .ejs_canvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    object-fit: contain !important;
+    image-rendering: auto !important;
+    background: #000 !important;
+  }
+  #ejs-host .ejs_start_button,
+  #ejs-host .ejs_loading_text,
+  #ejs-host .ejs_virtualGamepad_parent,
+  #ejs-host .ejs_virtualGamepad_top,
+  #ejs-host .ejs_virtualGamepad_bottom,
+  #ejs-host .ejs_virtualGamepad_left,
+  #ejs-host .ejs_virtualGamepad_right,
+  #ejs-host .ejs_virtualGamepad_button,
+  #ejs-host .ejs_virtualGamepad_open,
+  #ejs-host .ejs_menu_bar,
+  #ejs-host .ejs_control_bar,
+  #ejs-host .ejs_menu_bar_hidden,
+  #ejs-host [class*="virtualGamepad"],
+  #ejs-host [class*="virtual-gamepad"] {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  #game-loading {
+    position: absolute;
+    inset: 0;
+    display: none;
+    place-items: center;
+    align-content: center;
+    gap: 10px;
+    z-index: 80;
+    color: rgba(255,255,255,.86);
+    background: #000;
+    font: 600 .62rem/1.2 -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: .16em;
+    pointer-events: none;
+  }
+  #game-area.loading #game-loading { display: grid; }
+  .game-loading-ring {
+    position: relative !important;
+    width: 22px;
+    height: 22px;
+    border: 2px solid rgba(255,255,255,.18);
+    border-top-color: rgba(126,181,255,.95);
+    border-radius: 50%;
+    animation: csdLoadingSpin .75s linear infinite;
+  }
+  @keyframes csdLoadingSpin { to { transform: rotate(360deg); } }
+
+  .system-badge {
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.72);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  }
+  #popup-system-name {
+    min-height: 0.8rem;
+    margin-top: 5px;
+    font-size: 0.62rem;
+    color: #9ec7ff;
+    letter-spacing: 0.4px;
+  }
+
+  #install-popup {
+    position: absolute;
+    width: 100%; height: 100%;
+    top: 0; left: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 60;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  #install-popup.visible { display: flex; }
+  .popup-box {
+    width: 80%;
+    max-width: 280px;
+    background: linear-gradient(135deg, #1c1d26, #0d0e14);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 20px;
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.9), inset 0 1px 1px rgba(255,255,255,0.05);
+    font-family: inherit;
+  }
+  .popup-box h3 { font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; color: #ddd; }
+  .popup-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #ccc;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  .popup-btn:active { background: rgba(255,255,255,0.1); transform: translateY(2px); }
+  .popup-btn.install-btn { background: linear-gradient(to bottom, #4a4e69, #2b2d42); border-color: #5a5e79; margin-top: 20px; color: #fff; }
+  .popup-btn.install-btn:disabled { opacity: 0.3; pointer-events: none; }
+  .popup-btn input[type="file"] { margin: 0; padding: 0; font-size: 999px; pointer-events: auto; }
+  .file-name { font-size: 0.65rem; color: #888; margin-top: 4px; word-break: break-all; font-family: monospace; }
+  
+  /* Color Picker Styling */
+  #color-picker-input {
+    -webkit-appearance: none;
+    border: none;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    cursor: pointer;
+    background: transparent;
+    padding: 0;
+  }
+  #color-picker-input::-webkit-color-swatch-wrapper { padding: 0; }
+  #color-picker-input::-webkit-color-swatch { border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+
+  /* iOS-safe native file pickers. These intentionally remain real, tappable
+     input controls: iOS Files can reject uncommon ROM extensions when an
+     accept filter or an invisible overlay is used. */
+  #install-popup,
+  #install-popup .popup-box,
+  #install-popup label,
+  #install-popup input,
+  #install-popup button {
+    touch-action: manipulation !important;
+  }
+
+  .native-file-picker {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    min-height: 38px !important;
+    margin: 8px 0 3px !important;
+    padding: 6px !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    color: #ddd !important;
+    background: rgba(255,255,255,0.055) !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    border-radius: 6px !important;
+    font: 0.68rem/1.2 -apple-system, BlinkMacSystemFont, sans-serif !important;
+    -webkit-user-select: auto !important;
+    user-select: auto !important;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .native-file-picker::file-selector-button,
+  .native-file-picker::-webkit-file-upload-button {
+    margin: 0 9px 0 0;
+    padding: 7px 10px;
+    color: #fff;
+    background: linear-gradient(to bottom, #4a4e69, #2b2d42);
+    border: 1px solid #5a5e79;
+    border-radius: 5px;
+    font: 600 0.66rem/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .picker-caption {
+    display: block;
+    margin-top: 10px;
+    color: #bbb;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  /* Keep hidden XMB/boot effects from consuming animation time while a core runs. */
+  #screen.game-running .xmb-bg *,
+  #screen.game-running #xmb-ui *,
+  #screen.game-running .boot-sequence * {
+    animation-play-state: paused !important;
+  }
+
+  /* Orientation Warning Overlay */
+  #orientation-warning {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #121212;
+    z-index: 10000;
+    color: white;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-family: sans-serif;
+    padding: 20px;
+  }
+  #orientation-warning h2 { margin: 10px 0; font-size: 1.25rem; }
+  #orientation-warning p { color: #888; font-size: 0.85rem; }
+  @media (orientation: portrait) {
+    #orientation-warning { display: flex; }
+  }
+
+
+  /* ============================================================
+     CSD Build 14 — iOS screen UI
+     The physical shell and controller geometry are untouched.
+     ============================================================ */
+  .boot-sequence {
+    position:absolute; inset:0; z-index:100; overflow:hidden;
+    background:radial-gradient(circle at 50% 58%, #142a58 0%, #07101f 42%, #010306 100%);
+    opacity:0; pointer-events:none; perspective:none; transform:none;
+  }
+  .screen.is-booting .boot-sequence { opacity:1; }
+  .boot-glow { position:absolute; inset:0; background:radial-gradient(ellipse at 50% 72%, rgba(87,145,255,.25), transparent 44%); opacity:0; }
+  .boot-wave { position:absolute; left:-15%; width:130%; height:38%; border-radius:50%; border-top:1px solid rgba(155,198,255,.55); filter:none; }
+  .boot-wave-a { top:57%; transform:rotate(-4deg); }
+  .boot-wave-b { top:62%; transform:rotate(5deg); opacity:.45; }
+  .boot-logo { position:absolute; left:50%; top:47%; transform:translate(-50%,-50%) scale(.96); color:#fff; font:400 31px/1 'Century Gothic',sans-serif; letter-spacing:.22em; opacity:0; text-shadow:0 0 18px rgba(128,181,255,.55); }
+  .boot-logo span { margin-left:.35em; font-size:.45em; letter-spacing:0; vertical-align:middle; opacity:.8; }
+  .boot-tagline { position:absolute; left:50%; top:60%; transform:translateX(-50%); color:rgba(255,255,255,.58); font:600 6px/1.2 -apple-system,sans-serif; letter-spacing:.25em; white-space:nowrap; opacity:0; }
+  .boot-progress { position:absolute; left:50%; bottom:12%; transform:translateX(-50%); display:flex; gap:5px; opacity:0; }
+  .boot-progress i { position:relative; width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.75); }
+  .screen.is-booting .boot-glow { animation:gmxBootGlow 2.65s ease-out forwards; }
+  .screen.is-booting .boot-wave-a { animation:gmxBootWaveA 2.65s cubic-bezier(.2,.8,.2,1) forwards; }
+  .screen.is-booting .boot-wave-b { animation:gmxBootWaveB 2.65s cubic-bezier(.2,.8,.2,1) forwards; }
+  .screen.is-booting .boot-logo { animation:gmxBootLogo 2.65s ease forwards; }
+  .screen.is-booting .boot-tagline { animation:gmxBootTag 2.65s ease forwards; }
+  .screen.is-booting .boot-progress { animation:gmxBootDots 2.65s ease forwards; }
+  @keyframes gmxBootGlow { 0%,8%{opacity:0} 28%,78%{opacity:1} 100%{opacity:0} }
+  @keyframes gmxBootWaveA { 0%{transform:translateX(-18%) rotate(-4deg);opacity:0} 25%{opacity:1} 100%{transform:translateX(14%) rotate(-4deg);opacity:0} }
+  @keyframes gmxBootWaveB { 0%{transform:translateX(15%) rotate(5deg);opacity:0} 25%{opacity:.5} 100%{transform:translateX(-12%) rotate(5deg);opacity:0} }
+  @keyframes gmxBootLogo { 0%,25%{opacity:0;transform:translate(-50%,-50%) scale(.94)} 43%,80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(1.015)} }
+  @keyframes gmxBootTag { 0%,40%{opacity:0} 55%,80%{opacity:1} 100%{opacity:0} }
+  @keyframes gmxBootDots { 0%,52%{opacity:0} 65%,82%{opacity:1} 100%{opacity:0} }
+
+  #install-popup { background:rgba(1,5,12,.76); -webkit-backdrop-filter:none; backdrop-filter:none; padding:15px; }
+  .popup-box {
+    width:min(88%,320px); max-height:88%; overflow:auto; padding:17px 18px 15px;
+    background:linear-gradient(150deg,rgba(22,35,61,.98),rgba(7,12,23,.99));
+    border:1px solid rgba(142,183,255,.28); border-radius:7px; text-align:left;
+    box-shadow:0 12px 32px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.05);
+  }
+  .popup-box::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px; background:linear-gradient(#78b6ff,rgba(120,182,255,0)); }
+  .popup-box h3 { margin:0 0 13px; padding:0 0 10px; border-bottom:1px solid rgba(255,255,255,.09); color:#fff; font-size:.83rem; letter-spacing:.13em; text-align:left; }
+  .picker-caption { margin:10px 0 5px; color:rgba(255,255,255,.62); font-size:.58rem; letter-spacing:.14em; }
+  .file-pick-row { position:relative!important; display:flex!important; align-items:center; min-height:44px; width:100%; padding:8px 10px; gap:10px; overflow:hidden; border:1px solid rgba(255,255,255,.11); border-radius:5px; background:rgba(255,255,255,.055); }
+  .file-pick-row:active { background:rgba(112,169,255,.16); border-color:rgba(135,185,255,.45); }
+  .file-pick-icon { position:relative!important; display:grid; place-items:center; width:25px; height:25px; border-radius:50%; color:#d8e9ff; background:rgba(102,160,244,.16); font-size:.72rem; }
+  .file-pick-copy { position:relative!important; display:flex; flex-direction:column; min-width:0; flex:1; }
+  .file-pick-copy strong { font-size:.67rem; color:#fff; font-weight:650; letter-spacing:.02em; }
+  .file-pick-copy small { margin-top:2px; font-size:.53rem; color:rgba(255,255,255,.48); }
+  .file-pick-chevron { position:relative!important; color:rgba(255,255,255,.55); font-size:1rem; }
+  .native-file-picker { position:absolute!important; inset:0!important; width:100%!important; height:100%!important; min-height:0!important; margin:0!important; padding:0!important; opacity:0!important; cursor:pointer!important; z-index:4; }
+  .file-name { min-height:14px; margin:4px 2px 0; color:#8ebdff; font-size:.56rem; line-height:1.25; }
+  #popup-system-name { margin:2px 2px 0; color:#b9d6ff; font-size:.56rem; }
+  .popup-btn { min-height:35px; margin:9px 0 0; padding:9px 12px; border-radius:5px; border-color:rgba(255,255,255,.13); background:rgba(255,255,255,.055); color:rgba(255,255,255,.76); font-size:.62rem; box-shadow:none; }
+  .popup-btn.install-btn { background:linear-gradient(#6faaff,#3f72c8); border-color:rgba(190,219,255,.58); color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.4); }
+  .popup-btn.install-btn:disabled { opacity:.28; }
+  .popup-close { position:absolute!important; top:8%; right:8%; width:25px; height:25px; border-radius:50%; color:rgba(255,255,255,.72); background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.13); font:300 17px/1 -apple-system,sans-serif; z-index:65; }
+  .popup-footer { position:absolute!important; bottom:4.5%; left:50%; transform:translateX(-50%); color:rgba(255,255,255,.52); font-size:.55rem; letter-spacing:.06em; white-space:nowrap; }
+  .popup-key { position:relative!important; display:inline-grid; place-items:center; width:15px; height:15px; margin-right:5px; border:1px solid rgba(255,255,255,.38); border-radius:50%; color:#fff; font-size:.48rem; }
+
+  /* Remove every hidden menu/boot layer from compositing while a core is active. */
+  #screen.game-running .xmb-bg,
+  #screen.game-running #xmb-ui,
+  #screen.game-running .boot-sequence,
+  #screen.game-running #install-popup { display:none!important; }
+  #screen.game-running #game-area { transition:none!important; }
+  #screen.game-running #ejs-host { contain:layout paint; }
+  #screen.game-running { box-shadow:none; }
+  @media (prefers-reduced-motion: reduce) {
+    .screen.is-booting .boot-sequence * { animation-duration:.01ms!important; animation-iteration-count:1!important; }
+  }
+
+
+
+  /* ============================================================
+     CSD BUILD 8 — LARGER PSP-INSPIRED XMB + BILINGUAL BOOT
+     ============================================================ */
+  #xmb-ui {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial,
+      "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  .xmb-bg {
+    background:
+      radial-gradient(ellipse at 48% 32%, rgba(103,161,255,.28), transparent 34%),
+      linear-gradient(180deg, #173873 0%, #2358a7 46%, #173b7a 70%, #0b1d43 100%);
+  }
+  .xmb-bg::before {
+    opacity: .43;
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,.62) 0 1px, transparent 1.25px),
+      radial-gradient(circle, rgba(181,218,255,.4) 0 1px, transparent 1.3px);
+    background-size: 43px 43px, 67px 67px;
+    background-position: 6px 9px, 19px 28px;
+    animation: csdStarDrift 28s linear infinite;
+  }
+  .xmb-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px) 0 0 / 44px 100%,
+      linear-gradient(180deg, rgba(255,255,255,.018) 1px, transparent 1px) 0 0 / 100% 32px;
+    opacity: .28;
+    pointer-events: none;
+  }
+  .wave-line {
+    left: -30%;
+    width: 165%;
+    height: 190px;
+    border: 0;
+    border-top: 1px solid rgba(var(--wave-color), .38);
+    border-radius: 50%;
+    background: linear-gradient(180deg, rgba(var(--wave-color),.12), rgba(var(--wave-color),.015) 34%, transparent 66%);
+    box-shadow: 0 -1px 10px rgba(var(--wave-color),.17), inset 0 15px 28px rgba(var(--wave-color),.035);
+    animation: csdXmbWave 8.6s ease-in-out infinite alternate;
+  }
+  .wave-1 { top: 43%; transform: rotate(-5deg) scaleY(.64); opacity: .92; }
+  .wave-2 { top: 48%; transform: rotate(4deg) scaleY(.75); opacity: .56; animation-delay: -2.2s; }
+  .wave-3 { top: 53%; transform: rotate(-1deg) scaleY(.86); opacity: .34; animation-delay: -4.1s; }
+  .wave-4 { top: 58%; transform: rotate(7deg) scaleY(.72); opacity: .22; animation-delay: -5.8s; }
+  .xmb-sheen {
+    background: linear-gradient(112deg, transparent 29%, rgba(255,255,255,.11) 48%, transparent 65%);
+    opacity: .32;
+  }
+
+  #xmb-header {
+    top: 7.2%;
+    right: 4.5%;
+    gap: 11px;
+    font-size: .88rem;
+    font-weight: 400;
+    letter-spacing: .02em;
+    opacity: .94;
+  }
+  .battery-icon { width: 25px; height: 11px; border-width: 1px; }
+
+  #xmb-grid {
+    top: 39%;
+    gap: 92px;
+  }
+  .xmb-col { gap: 43px; }
+  .xmb-icon { width: 47px; height: 47px; }
+  .xmb-main span {
+    left: 128%;
+    font-size: 1.04rem;
+    font-weight: 400;
+    letter-spacing: .012em;
+  }
+  .active-col .active-item.xmb-main .xmb-icon {
+    transform: scale(1.34);
+    filter: drop-shadow(0 0 7px rgba(255,255,255,.88)) drop-shadow(0 8px 8px rgba(0,0,0,.7));
+  }
+  .xmb-sub {
+    min-height: 22px;
+    font-size: .94rem;
+    font-weight: 400;
+    letter-spacing: .006em;
+  }
+  .active-col .active-item.xmb-sub {
+    transform: scale(1.12);
+    font-size: 1rem;
+    font-weight: 500;
+    text-shadow: 0 1px 5px rgba(0,0,0,.95), 0 0 9px rgba(255,255,255,.34);
+  }
+  .active-col .active-item.xmb-sub::before {
+    width: 6px;
+    height: 6px;
+    left: -17px;
+    box-shadow: 0 0 9px rgba(255,255,255,.9);
+  }
+  .box-art { width: 68px; height: 46px; border-radius: 2px; }
+  .game-details { left: 91px; gap: 5px; }
+  .game-title { font-size: .98rem; font-weight: 500; }
+  .system-badge { font-size: .57rem; letter-spacing: .12em; }
+
+  #xmb-help {
+    right: 4.4%;
+    bottom: 6.2%;
+    gap: 15px;
+    font-size: .72rem;
+    opacity: .92;
+  }
+  #xmb-help b {
+    width: 18px;
+    height: 18px;
+    font-size: .58rem;
+    border-color: rgba(255,255,255,.7);
+    box-shadow: 0 0 7px rgba(255,255,255,.16);
+  }
+  #sys-msg {
+    bottom: 6.5%;
+    left: 4.5%;
+    transform: none;
+    font-size: .68rem;
+    letter-spacing: .08em;
+    color: rgba(255,255,255,.72);
+  }
+
+  /* PSP-like option sheets: flat, glassy and list-oriented instead of modern cards. */
+  #install-popup {
+    background: rgba(2,8,22,.68);
+    padding: 16px 22px;
+  }
+  .popup-box {
+    width: 79%;
+    max-width: 352px;
+    max-height: 87%;
+    overflow-y: auto;
+    border-radius: 2px;
+    padding: 18px 20px 17px;
+    background:
+      linear-gradient(100deg, rgba(15,42,89,.97), rgba(9,24,55,.93) 52%, rgba(4,13,32,.93)),
+      #0b1d40;
+    border: 1px solid rgba(188,220,255,.34);
+    border-left-color: rgba(219,238,255,.72);
+    box-shadow: 0 12px 30px rgba(0,0,0,.68), inset 0 1px rgba(255,255,255,.08);
+    text-align: left;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  .popup-box::before {
+    width: 3px;
+    background: linear-gradient(180deg, rgba(232,245,255,.98), rgba(101,171,255,.65) 48%, rgba(101,171,255,0));
+  }
+  .popup-box h3 {
+    margin: 0 0 13px;
+    padding: 0 0 11px;
+    font-size: .98rem;
+    font-weight: 400;
+    letter-spacing: .06em;
+    text-transform: none;
+    border-bottom: 1px solid rgba(211,231,255,.17);
+  }
+  .picker-caption {
+    margin: 12px 1px 5px;
+    color: rgba(201,224,255,.72);
+    font-size: .66rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .file-pick-row,
+  .popup-btn {
+    min-height: 42px;
+    border-radius: 0;
+    border: 0;
+    border-top: 1px solid rgba(255,255,255,.07);
+    border-bottom: 1px solid rgba(0,0,0,.32);
+    background: rgba(255,255,255,.035);
+    box-shadow: none;
+    color: rgba(255,255,255,.9);
+    font-size: .76rem;
+  }
+  .file-pick-row { padding: 8px 10px; }
+  .file-pick-row:active,
+  .popup-btn:active {
+    background: linear-gradient(90deg, rgba(130,191,255,.28), rgba(130,191,255,.07));
+    transform: none;
+  }
+  .file-pick-icon { font-size: 1rem; color: #d8ecff; }
+  .file-pick-copy strong { font-size: .78rem; font-weight: 500; }
+  .file-pick-copy small { font-size: .58rem; color: rgba(255,255,255,.52); }
+  .file-pick-chevron { font-size: 1.15rem; color: rgba(255,255,255,.62); }
+  .popup-btn.install-btn {
+    margin-top: 14px;
+    background: linear-gradient(90deg, rgba(115,178,255,.55), rgba(75,124,203,.24));
+    border-top-color: rgba(208,233,255,.4);
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6);
+  }
+  .file-name, #popup-system-name {
+    font-size: .65rem;
+    line-height: 1.3;
+  }
+  .popup-close {
+    top: 6%; right: 7%; width: 29px; height: 29px;
+    border-radius: 50%;
+    font-size: 18px;
+    background: rgba(14,38,82,.75);
+    border-color: rgba(203,228,255,.32);
+  }
+  .popup-footer { bottom: 3.7%; font-size: .63rem; }
+  .popup-key { width: 17px; height: 17px; font-size: .53rem; }
+
+  /* Creative, GPU-light bilingual CSD boot. Uses opacity/transform only. */
+  .boot-sequence {
+    display: block;
+    background:
+      radial-gradient(circle at 50% 46%, #295fa9 0%, #102d63 28%, #07152f 62%, #020713 100%);
+    perspective: none;
+    transform-style: flat;
+  }
+  .csd-boot-sky, .csd-boot-grid, .csd-boot-orbit, .csd-spark,
+  .csd-boot-lockup, .csd-boot-scan, .csd-boot-status { position: absolute; }
+  .csd-boot-sky {
+    inset: 0;
+    background:
+      radial-gradient(circle at 15% 30%, rgba(139,203,255,.22), transparent 18%),
+      radial-gradient(circle at 82% 62%, rgba(83,132,255,.23), transparent 21%),
+      linear-gradient(120deg, transparent 15%, rgba(255,255,255,.055) 49%, transparent 70%);
+    opacity: 0;
+  }
+  .csd-boot-grid {
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(172,216,255,.045) 1px, transparent 1px) 0 0/34px 100%,
+      linear-gradient(rgba(172,216,255,.035) 1px, transparent 1px) 0 0/100% 28px;
+    opacity: 0;
+    transform: scale(1.08);
+  }
+  .csd-boot-orbit {
+    left: -13%;
+    width: 126%;
+    height: 42%;
+    border-radius: 50%;
+    border-top: 1px solid rgba(191,224,255,.72);
+    opacity: 0;
+  }
+  .csd-orbit-a { top: 48%; transform: rotate(-7deg) scaleY(.65); }
+  .csd-orbit-b { top: 55%; transform: rotate(5deg) scaleY(.78); border-top-color: rgba(133,185,255,.5); }
+  .csd-orbit-c { top: 61%; transform: rotate(-1deg) scaleY(.55); border-top-color: rgba(255,255,255,.2); }
+  .csd-spark {
+    width: 3px; height: 3px; border-radius: 50%; background: #fff;
+    box-shadow: 0 0 8px 3px rgba(141,204,255,.65);
+    opacity: 0;
+  }
+  .csd-spark-a { left: 18%; top: 63%; }
+  .csd-spark-b { left: 72%; top: 42%; }
+  .csd-spark-c { left: 84%; top: 68%; }
+  .csd-boot-lockup {
+    left: 50%; top: 45%; width: 100%;
+    transform: translate(-50%,-50%) scale(.9);
+    text-align: center; color: #fff; opacity: 0;
+  }
+  .csd-boot-logo {
+    display: flex; justify-content: center; gap: .18em;
+    font: 300 44px/1 "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: .12em;
+    text-shadow: 0 0 15px rgba(169,214,255,.58);
+  }
+  .csd-boot-logo span { position: relative; }
+  .csd-boot-logo span::after {
+    content: ""; position: absolute; left: 6%; right: 6%; bottom: -4px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(224,243,255,.9), transparent);
+  }
+  .csd-boot-jp {
+    margin-top: 10px;
+    font: 400 11px/1.2 "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    letter-spacing: .32em;
+    color: rgba(223,240,255,.9);
+  }
+  .csd-boot-en {
+    margin-top: 9px;
+    font: 500 6.8px/1.2 -apple-system, sans-serif;
+    letter-spacing: .31em;
+    color: rgba(255,255,255,.63);
+  }
+  .csd-boot-subjp {
+    margin-top: 5px;
+    font: 400 6.4px/1.2 "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    letter-spacing: .16em;
+    color: rgba(207,229,255,.48);
+  }
+  .csd-boot-scan {
+    left: 17%; right: 17%; top: 66%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(188,224,255,.9), transparent);
+    transform: scaleX(0); opacity: 0;
+  }
+  .csd-boot-status {
+    left: 50%; bottom: 12%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 8px;
+    color: rgba(213,235,255,.58);
+    font: 500 5.5px/1 -apple-system,sans-serif;
+    letter-spacing: .22em;
+    white-space: nowrap; opacity: 0;
+  }
+  .csd-boot-status b { width: 18px; height: 1px; background: rgba(183,218,255,.34); }
+
+  .screen.is-booting .csd-boot-sky { animation: csdBootSky 3.45s ease-out forwards; }
+  .screen.is-booting .csd-boot-grid { animation: csdBootGrid 3.45s ease-out forwards; }
+  .screen.is-booting .csd-boot-orbit { animation: csdBootOrbit 3.45s cubic-bezier(.2,.8,.2,1) forwards; }
+  .screen.is-booting .csd-orbit-b { animation-delay: .08s; }
+  .screen.is-booting .csd-orbit-c { animation-delay: .16s; }
+  .screen.is-booting .csd-boot-lockup { animation: csdBootLogo 3.45s cubic-bezier(.2,.8,.2,1) forwards; }
+  .screen.is-booting .csd-boot-scan { animation: csdBootScan 3.45s ease forwards; }
+  .screen.is-booting .csd-boot-status { animation: csdBootStatus 3.45s ease forwards; }
+  .screen.is-booting .csd-spark-a { animation: csdSparkA 3.45s ease-in-out forwards; }
+  .screen.is-booting .csd-spark-b { animation: csdSparkB 3.45s ease-in-out forwards; }
+  .screen.is-booting .csd-spark-c { animation: csdSparkC 3.45s ease-in-out forwards; }
+
+  @keyframes csdStarDrift { to { background-position: 49px 52px, 86px 95px; } }
+  @keyframes csdXmbWave { from { margin-left:-9px; margin-top:-3px; } to { margin-left:10px; margin-top:4px; } }
+  @keyframes csdBootSky { 0%{opacity:0} 12%,84%{opacity:1} 100%{opacity:0} }
+  @keyframes csdBootGrid { 0%{opacity:0;transform:scale(1.08)} 22%,78%{opacity:.65;transform:scale(1)} 100%{opacity:0;transform:scale(.98)} }
+  @keyframes csdBootOrbit { 0%{opacity:0;margin-left:-20%} 24%,79%{opacity:.8;margin-left:0} 100%{opacity:0;margin-left:13%} }
+  @keyframes csdBootLogo { 0%,20%{opacity:0;transform:translate(-50%,-50%) scale(.88)} 35%,79%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(1.04)} }
+  @keyframes csdBootScan { 0%,28%{opacity:0;transform:scaleX(0)} 42%,78%{opacity:.7;transform:scaleX(1)} 100%{opacity:0;transform:scaleX(1)} }
+  @keyframes csdBootStatus { 0%,46%{opacity:0} 58%,82%{opacity:1} 100%{opacity:0} }
+  @keyframes csdSparkA { 0%,22%{opacity:0;transform:translate(0,0)} 38%,75%{opacity:1} 100%{opacity:0;transform:translate(180px,-48px)} }
+  @keyframes csdSparkB { 0%,27%{opacity:0;transform:translate(0,0)} 43%,78%{opacity:.8} 100%{opacity:0;transform:translate(-210px,64px)} }
+  @keyframes csdSparkC { 0%,34%{opacity:0;transform:translate(0,0)} 50%,80%{opacity:.7} 100%{opacity:0;transform:translate(-230px,-35px)} }
+
+  @media (prefers-reduced-motion: reduce) {
+    .screen.is-booting .boot-sequence * { animation-duration: .01ms!important; animation-iteration-count: 1!important; }
+  }
+
+
+  /* Reset the shell's absolute-position rule for text/layout children. */
+  .csd-boot-logo, .csd-boot-jp, .csd-boot-en, .csd-boot-subjp,
+  .csd-boot-status span, .csd-boot-status b,
+  .picker-caption, .file-pick-copy strong, .file-pick-copy small {
+    position: relative!important;
+  }
+
+
+
+  /* ============================================================
+     CSD BUILD 10 — IOS AUDIO, BOUNDED XMB TYPE, NATIVE TAP FEEDBACK
+     ============================================================ */
+  #xmb-header {
+    max-width: 46%;
+    font-size: .76rem;
+    white-space: nowrap;
+  }
+  #xmb-grid { gap: 84px; }
+  .xmb-col { gap: 38px; min-width: 70px; }
+  .xmb-main span {
+    left: 121%;
+    max-width: 104px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: .84rem;
+    line-height: 1.1;
+  }
+  .xmb-sub:not(.game-item) {
+    width: 188px;
+    max-width: 188px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 6px;
+    font-size: .76rem;
+    line-height: 1.15;
+  }
+  .active-col .active-item.xmb-sub:not(.game-item) {
+    transform: translateX(4px) scale(1.025);
+    font-size: .80rem;
+  }
+  .game-item {
+    width: 196px;
+    max-width: 196px;
+    overflow: visible;
+  }
+  .box-art { width: 62px; height: 42px; }
+  .game-details {
+    left: 78px;
+    width: 124px;
+    max-width: 124px;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .game-title {
+    display: block;
+    width: 124px;
+    max-width: 124px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .84rem;
+  }
+  .system-badge { font-size: .52rem; }
+  #sys-msg {
+    max-width: 56%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .61rem;
+  }
+  #xmb-help { max-width: 42%; font-size: .63rem; gap: 11px; }
+  .popup-box { width: 82%; max-width: 330px; padding: 15px 17px 14px; }
+  .popup-box h3 {
+    max-width: calc(100% - 26px);
+    overflow-wrap: anywhere;
+    font-size: .84rem;
+    line-height: 1.18;
+  }
+  .popup-box > div { max-width: 100%; overflow-wrap: anywhere; }
+  .file-pick-copy strong, .file-pick-copy small, .file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .file-pick-copy strong { font-size: .64rem; }
+  .file-pick-copy small { font-size: .51rem; }
+  .popup-btn { font-size: .59rem; }
+
+  /* Safari 18+ supplies one native haptic tick for a directly tapped switch.
+     These transparent switches sit over discrete shell controls while the
+     visible control remains unchanged. */
+  .ios-haptic-proxy {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: .001 !important;
+    z-index: 9999 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    -webkit-appearance: auto !important;
+    appearance: auto !important;
+  }
+  #screen.game-running .ios-haptic-proxy { display: block !important; }
+  body.game-active .xmb-bg,
+  body.game-active #xmb-ui,
+  body.game-active .boot-sequence,
+  body.game-active #install-popup { display: none !important; }
+  body.game-active .wave-line,
+  body.game-active .xmb-bg::before,
+  body.game-active .xmb-sheen,
+  body.game-active .boot-sequence * { animation: none !important; }
+
+
+
+  /* Build 14 runtime isolation: the active core owns the screen and touch path. */
+  #ejs-host, #ejs-host * {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  body.game-active { background: #000 !important; }
+  body.game-active article { contain: none; }
+  body.game-active #camera-bg { display: none !important; }
+  body.game-active #volume-osd:not(.show) { display: none !important; }
+  .xmb-fit-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #game-recovery {
+    position: absolute; inset: 0; z-index: 120; display: none;
+    place-items: center; align-content: center; gap: 8px;
+    padding: 20px; background: #000; color: #fff; text-align: center;
+    font: 700 .62rem/1.35 -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: .12em; pointer-events: none;
+  }
+  #game-recovery.show { display: grid; }
+  #game-recovery small { color: rgba(255,255,255,.62); font-size: .48rem; letter-spacing: .06em; }
+  @media (max-height: 430px) {
+    .popup-box { transform: translateY(-2px) scale(.96); transform-origin: center; }
+  }
+
+
+
+  /* Build 14.2.1: game-launch boot animation replaces all core-loading text. */
+  #sys-msg {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  #game-loading {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 80;
+    overflow: hidden;
+    background: #000;
+    color: #fff;
+    pointer-events: none;
+  }
+  #game-area.loading #game-loading { display: block; }
+  #game-boot-animation,
+  #game-boot-animation * { box-sizing: border-box; }
+  #game-boot-animation {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #000;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+  }
+  .game-boot-company,
+  .game-boot-logo,
+  .game-boot-swoosh,
+  .game-boot-flash {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+  .game-boot-company {
+    transform: translate(-50%, -50%) scale(.985);
+    width: 92%;
+    text-align: center;
+    white-space: nowrap;
+    font-size: clamp(8px, 2.9vw, 14px);
+    font-weight: 500;
+    letter-spacing: .22em;
+  }
+  .game-boot-company span {
+    position: relative !important;
+    display: inline-block;
+    margin-left: .5em;
+    font-size: .48em;
+    font-weight: 600;
+    letter-spacing: .27em;
+    vertical-align: .17em;
+  }
+  .game-boot-logo {
+    transform: translate(-50%, -50%) scale(.9);
+    display: flex;
+    align-items: baseline;
+    gap: .17em;
+    white-space: nowrap;
+    font-size: clamp(34px, 12vw, 62px);
+    font-weight: 300;
+    letter-spacing: -.06em;
+  }
+  .game-boot-logo span {
+    position: relative !important;
+    font-size: .56em;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .game-boot-swoosh {
+    top: 62%;
+    width: 54%;
+    height: 18%;
+    border-top: 2px solid rgba(255,255,255,.95);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scaleX(.05) rotate(-4deg);
+    filter: drop-shadow(0 0 5px rgba(255,255,255,.55));
+  }
+  .game-boot-flash {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(.2);
+    background: #fff;
+    box-shadow: 0 0 12px 5px rgba(255,255,255,.92), 0 0 38px 18px rgba(125,176,255,.5);
+  }
+  #game-loading.boot-playing .game-boot-company {
+    animation: csdGameBootCompany 3.55s ease forwards;
+  }
+  #game-loading.boot-playing .game-boot-logo {
+    animation: csdGameBootLogo 3.55s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  #game-loading.boot-playing .game-boot-swoosh {
+    animation: csdGameBootSwoosh 3.55s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  #game-loading.boot-playing .game-boot-flash {
+    animation: csdGameBootFlash 3.55s ease-out forwards;
+  }
+  @keyframes csdGameBootCompany {
+    0%,7% { opacity:0; transform:translate(-50%,-50%) scale(.985); }
+    16%,31% { opacity:1; transform:translate(-50%,-50%) scale(1); }
+    39%,100% { opacity:0; transform:translate(-50%,-50%) scale(1.012); }
+  }
+  @keyframes csdGameBootLogo {
+    0%,40% { opacity:0; transform:translate(-50%,-50%) scale(.9); }
+    54%,82% { opacity:1; transform:translate(-50%,-50%) scale(1); }
+    100% { opacity:0; transform:translate(-50%,-50%) scale(1.025); }
+  }
+  @keyframes csdGameBootSwoosh {
+    0%,43% { opacity:0; transform:translate(-50%,-50%) scaleX(.05) rotate(-4deg); }
+    56%,79% { opacity:.95; transform:translate(-50%,-50%) scaleX(1) rotate(-4deg); }
+    100% { opacity:0; transform:translate(-50%,-50%) scaleX(1.08) rotate(-4deg); }
+  }
+  @keyframes csdGameBootFlash {
+    0%,43% { opacity:0; transform:translate(-50%,-50%) scale(.2); }
+    49% { opacity:1; transform:translate(-50%,-50%) scale(1); }
+    59%,100% { opacity:0; transform:translate(-50%,-50%) scale(7); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #game-loading.boot-playing .game-boot-company,
+    #game-loading.boot-playing .game-boot-logo,
+    #game-loading.boot-playing .game-boot-swoosh,
+    #game-loading.boot-playing .game-boot-flash { animation-duration: 3.55s !important; }
+  }
+
+</style>
+</head>
+<body>
+  <div id="orientation-warning">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+    <h2>Landscape Mode Required</h2>
+    <p>Please tilt your device horizontally to display the CSD Switch layout correctly.</p>
+  </div>
+
+  <video id="camera-bg" autoplay playsinline muted></video>
+  <main>
+    <article class="joycons-arriving" aria-label="CSD handheld emulator">
+      <section class="controller left">
+        <button class="bumper l-bumper" id="switch-l"></button>
+        <button class="minus" id="switch-minus"></button>
+        <button class="mushroom round"></button>
+        <button class="direction arrow round up" id="switch-up"></button>
+        <button class="direction arrow round left" id="switch-left"></button>
+        <button class="direction arrow round right" id="switch-right"></button>
+        <button class="direction arrow round down" id="switch-down"></button>
+        <button class="menu"></button>
+      </section>
+
+      <section class="controller right">
+        <button class="bumper r-bumper" id="switch-r"></button>
+        <button class="minus plus" id="switch-plus"></button>
+        <button class="direction round up x" id="switch-x"></button>
+        <button class="direction round left y" id="switch-y"></button>
+        <button class="direction round right a" id="switch-a"></button>
+        <button class="direction round down b" id="switch-b"></button>
+        <button class="mushroom round"></button>
+        <button class="round home" id="switch-home"></button>
+      </section>
+
+      <section class="body">
+        
+        <!-- MASSIVE INVISIBLE HITBOXES (Bypasses CSS Clip-Path Bug) -->
+        <div class="vol-hitbox down" style="position: absolute; top: -3%; left: 11.5%; width: 6%; height: 6%; z-index: 9999; cursor: pointer;"></div>
+        <div class="vol-hitbox up" style="position: absolute; top: -3%; left: 17.5%; width: 6%; height: 6%; z-index: 9999; cursor: pointer;"></div>
+        
+        <button class="volume"></button>
+        <div class="frame"></div>
+        <div class="screen" id="screen">
+
+          <!-- VOLUME OSD -->
+          <div id="volume-osd">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            <div class="vol-track"><div id="vol-fill"></div></div>
+          </div>
+
+          <!-- Lightweight CSD bilingual boot sequence -->
+          <div class="boot-sequence" aria-hidden="true">
+            <div class="csd-boot-sky"></div>
+            <div class="csd-boot-grid"></div>
+            <div class="csd-boot-orbit csd-orbit-a"></div>
+            <div class="csd-boot-orbit csd-orbit-b"></div>
+            <div class="csd-boot-orbit csd-orbit-c"></div>
+            <i class="csd-spark csd-spark-a"></i>
+            <i class="csd-spark csd-spark-b"></i>
+            <i class="csd-spark csd-spark-c"></i>
+            <div class="csd-boot-lockup">
+              <div class="csd-boot-logo"><span>C</span><span>S</span><span>D</span></div>
+              <div class="csd-boot-jp">シー・エス・ディー</div>
+              <div class="csd-boot-en">COMPUTER SYSTEM DESIGN</div>
+              <div class="csd-boot-subjp">コンピュータ・システム・デザイン</div>
+            </div>
+            <div class="csd-boot-scan"></div>
+            <div class="csd-boot-status"><b></b><span>STARTING SYSTEM</span><b></b></div>
+          </div>
+
+          <!-- CSD PSP-style XMB OS content, scaled to fit -->
+          <div id="os-scale-wrapper">
+            <div class="xmb-bg">
+              <div id="wallpaper-layer" class="xmb-wallpaper"></div>
+              <div id="game-bg-layer" class="xmb-game-bg"></div>
+              <div class="wave-line wave-1"></div>
+              <div class="wave-line wave-2"></div>
+              <div class="wave-line wave-3"></div>
+              <div class="wave-line wave-4"></div>
+              <div class="xmb-sheen"></div>
+            </div>
+            <div id="xmb-ui">
+              <div id="xmb-header">
+                <span id="xmb-clock"></span>
+                <div class="battery-icon"><div class="battery-fill"></div></div>
+              </div>
+              <div id="xmb-grid">
+                <div class="xmb-col">
+                  <div class="xmb-main">
+                    <svg class="xmb-icon" viewBox="0 0 24 24"><path d="M17 6h-2V4c0-1.1-.9-2-2-2h-2c-1.1 0-2 .9-2 2v2H7c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2h2v2h-2V4z M19 18H5V11h14v7z M5 9V8h14v1H5z"/></svg>
+                    <span>Settings</span>
+                  </div>
+                  <div class="xmb-sub">Legacy GBA BIOS (Optional)</div>
+                  <!-- 3 NEW COLOR EDITOR ITEMS -->
+                  <div class="xmb-sub">Edit L-Control Color</div>
+                  <div class="xmb-sub">Edit R-Control Color</div>
+                  <div class="xmb-sub">Edit Wave Color</div>
+                  <div class="xmb-sub">Change Screen Wallpaper</div>
+                </div>
+                <div class="xmb-col" id="game-column">
+                  <div class="xmb-main">
+                    <svg class="xmb-icon" viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h4l2-2h6l2 2h4c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm6.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm2-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                    <span>Game</span>
+                  </div>
+                  <div class="xmb-sub" id="memory-stick">Memory Stick (Install)</div>
+                </div>
+                <div class="xmb-col">
+                  <div class="xmb-main">
+                    <svg class="xmb-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    <span>About</span>
+                  </div>
+                  <div class="xmb-sub">Build 14.2.1 · EmulatorJS 4.2</div>
+                </div>
+              </div>
+              <div id="xmb-help">
+                <span><b>A</b><span id="xmb-help-primary">Enter</span></span>
+                <span><b>B</b><span id="xmb-help-secondary">Back</span></span>
+              </div>
+              <div id="sys-msg">Ready</div>
+            </div>
+            
+            <div id="install-popup" role="dialog" aria-modal="true" aria-label="CSD options">
+              <!-- INSTALL GAME -->
+              <div class="popup-box" id="popup-box-game" style="display:block;">
+                <h3>Install Game</h3>
+                <label class="picker-caption" for="install-rom-upload">Game ROM</label>
+                <!-- No accept filter: iOS Files can hide uncommon ROM extensions. -->
+                <label class="file-pick-row" for="install-rom-upload">
+                  <span class="file-pick-icon">▣</span>
+                  <span class="file-pick-copy"><strong>Choose ROM</strong><small>Browse the Files app</small></span>
+                  <span class="file-pick-chevron">›</span>
+                  <input type="file" id="install-rom-upload" class="native-file-picker" aria-label="Choose a game ROM">
+                </label>
+                <div class="file-name" id="popup-rom-name">No ROM selected</div>
+                <div id="popup-system-name"></div>
+                <div style="font-size:0.56rem;color:#777;margin:6px 0 10px;line-height:1.35;">Choose Browse on iPhone, then select an uncompressed ROM from Files.<br>NES · SNES · N64 · GB/GBC · GBA · Nintendo DS · Genesis/Mega Drive</div>
+                <label class="picker-caption" for="install-cover-upload">Cover Art (optional)</label>
+                <label class="file-pick-row" for="install-cover-upload">
+                  <span class="file-pick-icon">▧</span>
+                  <span class="file-pick-copy"><strong>Choose Cover</strong><small>Photo Library or Files</small></span>
+                  <span class="file-pick-chevron">›</span>
+                  <input type="file" id="install-cover-upload" class="native-file-picker" accept="image/*" aria-label="Choose optional cover art">
+                </label>
+                <div class="file-name" id="popup-cover-name">Optional</div>
+                <button class="popup-btn install-btn" id="popup-install" disabled>Install</button>
+              </div>
+              
+              <!-- INSERT CORE -->
+              <div class="popup-box" id="popup-box-bios" style="display:none;">
+                <h3>Legacy GBA BIOS</h3>
+                <div style="font-size:0.7rem;color:#888;margin-bottom:12px;">Optional legacy GBA BIOS.<br>Multi-system games use browser cores and do not require this file.</div>
+                <label class="picker-caption" for="install-bios-upload">BIOS file</label>
+                <label class="file-pick-row" for="install-bios-upload">
+                  <span class="file-pick-icon">◇</span>
+                  <span class="file-pick-copy"><strong>Choose BIOS</strong><small>Browse the Files app</small></span>
+                  <span class="file-pick-chevron">›</span>
+                  <input type="file" id="install-bios-upload" class="native-file-picker" aria-label="Choose a GBA BIOS file">
+                </label>
+                <div class="file-name" id="popup-bios-name">No BIOS selected</div>
+                <button class="popup-btn install-btn" id="popup-install-bios" disabled>Install Core</button>
+              </div>
+
+              <!-- EDIT COLORS -->
+              <div class="popup-box" id="popup-box-color" style="display:none;">
+                <h3 id="color-popup-title">Edit Color</h3>
+                <div style="font-size:0.7rem;color:#888;margin-bottom:12px;">Tap the circle to open color picker.</div>
+                <div style="display: flex; justify-content: center; margin: 15px 0;">
+                  <input type="color" id="color-picker-input" value="#00c5e2">
+                </div>
+                <button class="popup-btn install-btn" id="popup-save-color">Save Color</button>
+                <button class="popup-btn" id="popup-cancel-color">Cancel</button>
+              </div>
+
+              <!-- CHANGE SCREEN WALLPAPER -->
+              <div class="popup-box" id="popup-box-wallpaper" style="display:none;">
+                <h3>Screen Wallpaper</h3>
+                <div style="font-size:0.7rem;color:#888;margin-bottom:12px;">Choose an image for the XMB screen background.</div>
+                <label class="picker-caption" for="wallpaper-upload">Wallpaper image</label>
+                <label class="file-pick-row" for="wallpaper-upload">
+                  <span class="file-pick-icon">▤</span>
+                  <span class="file-pick-copy"><strong>Choose Image</strong><small>Photo Library or Files</small></span>
+                  <span class="file-pick-chevron">›</span>
+                  <input type="file" id="wallpaper-upload" class="native-file-picker" accept="image/*" aria-label="Choose a wallpaper image">
+                </label>
+                <div class="file-name" id="wallpaper-file-name">No image selected</div>
+                <button class="popup-btn install-btn" id="popup-apply-wallpaper" disabled>Apply Wallpaper</button>
+                <button class="popup-btn" id="popup-remove-wallpaper">Remove Wallpaper</button>
+                <button class="popup-btn" id="popup-cancel-wallpaper">Cancel</button>
+              </div>
+              <button class="popup-close" id="popup-close-all" type="button" aria-label="Close dialog">×</button>
+              <div class="popup-footer"><span class="popup-key">B</span> Close</div>
+            </div>
+            <div id="game-area">
+              <canvas id="game-canvas" width="240" height="160"></canvas>
+              <div id="ejs-host" role="application" aria-label="Multi-system game emulator"></div>
+              <div id="game-loading" aria-hidden="true">
+                <div id="game-boot-animation">
+                  <div class="game-boot-company">GAMEX <span>COMPUTER ENTERTAINMENT</span></div>
+                  <div class="game-boot-flash"></div>
+                  <div class="game-boot-logo">CSD <span>1</span></div>
+                  <div class="game-boot-swoosh"></div>
+                </div>
+              </div>
+              <div id="game-recovery" role="status" aria-live="assertive">
+                <span id="game-recovery-title">RECOVERING GAME</span>
+                <small id="game-recovery-detail">Protecting your latest progress…</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </article>
+  </main>
+<script>
+    /* CSD Build 14: restores stock EmulatorJS timing, removes frame-by-frame shell polling, uses the modern WebGL2 core when available, and keeps controls/haptics/recovery. */
+    document.addEventListener('DOMContentLoaded', () => {
+      // Fail closed instead of exposing the raw grey panel during initialization.
+      var startupScreen = document.getElementById('screen');
+      if (startupScreen) startupScreen.classList.add('power-off');
+
+      // SAFE LOCALSTORAGE WRAPPERS
+      function safeGetItem(key, defaultVal) {
+        try { return localStorage.getItem(key) || defaultVal; } catch(e) { return defaultVal; }
+      }
+      function safeSetItem(key, val) {
+        try { localStorage.setItem(key, val); } catch(e) { console.warn("Storage disabled", e); }
+      }
+
+      // COLOR SAVING & LOADING
+      function hexToRgb(hex) {
+        var bigint = parseInt(hex.replace('#',''), 16);
+        return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255].join(', ');
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function normalizeHex(hex) {
+        if (!hex) return null;
+        hex = String(hex).trim();
+        if (hex[0] !== '#') hex = '#' + hex;
+        if (hex.length === 4) {
+          hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+        }
+        return /^#[0-9a-fA-F]{6}$/.test(hex) ? hex.toLowerCase() : null;
+      }
+
+      function hexToRgbObject(hex) {
+        hex = normalizeHex(hex);
+        if (!hex) return null;
+        var bigint = parseInt(hex.slice(1), 16);
+        return {
+          r: (bigint >> 16) & 255,
+          g: (bigint >> 8) & 255,
+          b: bigint & 255
+        };
+      }
+
+      function rgbToHsl(r, g, b) {
+        r /= 255; g /= 255; b /= 255;
+        var max = Math.max(r, g, b), min = Math.min(r, g, b);
+        var h, s, l = (max + min) / 2;
+
+        if (max === min) {
+          h = s = 0;
+        } else {
+          var d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            default: h = (r - g) / d + 4; break;
+          }
+          h /= 6;
+        }
+
+        return { h: h * 360, s: s * 100, l: l * 100 };
+      }
+
+      function hslToRgb(h, s, l) {
+        h = ((h % 360) + 360) % 360;
+        s = clamp(s, 0, 100) / 100;
+        l = clamp(l, 0, 100) / 100;
+
+        if (s === 0) {
+          var gray = Math.round(l * 255);
+          return { r: gray, g: gray, b: gray };
+        }
+
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+
+        function hueToRgb(pv, qv, tv) {
+          if (tv < 0) tv += 1;
+          if (tv > 1) tv -= 1;
+          if (tv < 1 / 6) return pv + (qv - pv) * 6 * tv;
+          if (tv < 1 / 2) return qv;
+          if (tv < 2 / 3) return pv + (qv - pv) * (2 / 3 - tv) * 6;
+          return pv;
+        }
+
+        var hk = h / 360;
+        return {
+          r: Math.round(hueToRgb(p, q, hk + 1 / 3) * 255),
+          g: Math.round(hueToRgb(p, q, hk) * 255),
+          b: Math.round(hueToRgb(p, q, hk - 1 / 3) * 255)
+        };
+      }
+
+      function rgbToHex(rgb) {
+        function part(v) {
+          var s = clamp(Math.round(v), 0, 255).toString(16);
+          return s.length < 2 ? '0' + s : s;
+        }
+        return '#' + part(rgb.r) + part(rgb.g) + part(rgb.b);
+      }
+
+      function rgbToRgba(rgb, alpha) {
+        return 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', ' + alpha + ')';
+      }
+
+      function buildJoyconPalette(hex) {
+        var normalized = normalizeHex(hex);
+        var rgb = hexToRgbObject(normalized);
+        if (!rgb) return null;
+        var hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+        function tone(deltaL, deltaS, deltaH, alpha) {
+          var toned = hslToRgb(hsl.h + (deltaH || 0), hsl.s + (deltaS || 0), hsl.l + (deltaL || 0));
+          return typeof alpha === 'number' ? rgbToRgba(toned, alpha) : rgbToHex(toned);
+        }
+
+        return {
+          base: normalized,
+          highlight: tone(14, 6, 0),
+          mid: tone(7, 3, 0),
+          edge: tone(-10, 4, 0),
+          shadow: tone(-23, 4, 0, 0.38),
+          deepShadow: tone(-32, 6, 0, 0.56)
+        };
+      }
+
+      function applyJoyconPalette(side, hex, persist) {
+        var article = document.querySelector('article');
+        var palette = buildJoyconPalette(hex);
+        if (!article || !palette) return;
+        var prefix = side === 'right' ? '--joycon-right' : '--joycon-left';
+        article.style.setProperty(prefix, palette.base);
+        article.style.setProperty(prefix + '-highlight', palette.highlight);
+        article.style.setProperty(prefix + '-mid', palette.mid);
+        article.style.setProperty(prefix + '-edge', palette.edge);
+        article.style.setProperty(prefix + '-shadow', palette.shadow);
+        article.style.setProperty(prefix + '-deep-shadow', palette.deepShadow);
+        if (persist) {
+          safeSetItem(side === 'right' ? 'gmx_color_right' : 'gmx_color_left', palette.base);
+        }
+      }
+
+      function loadSavedColors() {
+        var xmbBg = document.querySelector('.xmb-bg');
+        var l = safeGetItem('gmx_color_left', null);
+        var r = safeGetItem('gmx_color_right', null);
+        var w = safeGetItem('gmx_color_wave', null);
+        
+        if (l) { applyJoyconPalette('left', l, false); }
+        if (r) { applyJoyconPalette('right', r, false); }
+        if (w) { xmbBg.style.setProperty('--wave-color', hexToRgb(w)); }
+      }
+      loadSavedColors(); 
+
+      // Haptics: web vibration on supported browsers and rumble on supported external controllers.
+      // iOS Safari/Home Screen PWAs do not expose programmable phone haptics for custom buttons.
+      var HAPTIC_PATTERNS = {
+        soft: 8, tick: 12, tap: 18, confirm: 28, warning: [18, 28, 22]
+      };
+
+      function rumbleConnectedController(kind) {
+        try {
+          if (!navigator.getGamepads) return false;
+          var pads = navigator.getGamepads();
+          var magnitude = kind === 'confirm' ? .38 : kind === 'warning' ? .5 : .2;
+          var duration = kind === 'confirm' ? 42 : kind === 'warning' ? 75 : 24;
+          var fired = false;
+          for (var i = 0; i < pads.length; i++) {
+            var pad = pads[i];
+            if (!pad) continue;
+            var actuator = pad.vibrationActuator || (pad.hapticActuators && pad.hapticActuators[0]);
+            if (!actuator) continue;
+            if (typeof actuator.playEffect === 'function') {
+              actuator.playEffect('dual-rumble', {
+                duration: duration,
+                strongMagnitude: magnitude * .65,
+                weakMagnitude: magnitude
+              }).catch(function(){});
+              fired = true;
+            } else if (typeof actuator.pulse === 'function') {
+              actuator.pulse(magnitude, duration).catch(function(){});
+              fired = true;
+            }
+          }
+          return fired;
+        } catch (e) { return false; }
+      }
+
+      function haptic(kind) {
+        var fired = false;
+        var vibrate = navigator.vibrate || navigator.webkitVibrate;
+        if (typeof vibrate === 'function') {
+          try {
+            fired = vibrate.call(navigator, HAPTIC_PATTERNS[kind || 'tap'] || HAPTIC_PATTERNS.tap) || fired;
+          } catch (e) {}
+        }
+        return rumbleConnectedController(kind) || fired;
+      }
+
+      // Offline, synthesized XMB navigation sounds. Created only from a user gesture.
+      const NativeAudioContext = window.AudioContext || window.webkitAudioContext;
+      var XmbAudio = (function() {
+        var ctx = null, master = null;
+        function ensure() {
+          if (!NativeAudioContext) return null;
+          if (!ctx) {
+            try {
+              ctx = new NativeAudioContext({ latencyHint: 'interactive' });
+              master = ctx.createGain();
+              master.gain.value = .18;
+              master.connect(ctx.destination);
+            } catch (e) { return null; }
+          }
+          if (ctx.state === 'suspended') ctx.resume().catch(function(){});
+          return ctx;
+        }
+        function tone(freq, duration, delay, type, gain, endFreq) {
+          var c = ensure();
+          if (!c || !master) return;
+          var now = c.currentTime + (delay || 0);
+          var osc = c.createOscillator();
+          var amp = c.createGain();
+          osc.type = type || 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          if (endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(30, endFreq), now + duration);
+          amp.gain.setValueAtTime(.0001, now);
+          amp.gain.exponentialRampToValueAtTime(gain || .12, now + .005);
+          amp.gain.exponentialRampToValueAtTime(.0001, now + duration);
+          osc.connect(amp); amp.connect(master);
+          osc.start(now); osc.stop(now + duration + .015);
+        }
+        function play(kind) {
+          if (emu && emu.running) return;
+          ensure();
+          if (kind === 'move') {
+            tone(980, .035, 0, 'sine', .1, 1120);
+            tone(1960, .025, .006, 'sine', .035, 2200);
+          } else if (kind === 'confirm') {
+            tone(620, .055, 0, 'sine', .13, 790);
+            tone(930, .065, .025, 'sine', .1, 1220);
+          } else if (kind === 'back') {
+            tone(690, .055, 0, 'sine', .11, 430);
+            tone(420, .06, .03, 'triangle', .055, 310);
+          } else if (kind === 'error') {
+            tone(240, .07, 0, 'square', .055, 210);
+            tone(210, .08, .09, 'square', .045, 180);
+          } else if (kind === 'open') {
+            tone(520, .05, 0, 'sine', .08, 720);
+          }
+        }
+        function boot() {
+          ensure();
+          tone(392, .36, 0, 'sine', .055, 523);
+          tone(587, .42, .09, 'sine', .05, 784);
+          tone(880, .52, .2, 'sine', .04, 1175);
+        }
+        function suspend() {
+          if (ctx && ctx.state === 'running') ctx.suspend().catch(function(){});
+        }
+        return { ensure: ensure, play: play, boot: boot, suspend: suspend };
+      })();
+
+      // ===================================================================
+      // AUDIO OWNERSHIP
+      // ===================================================================
+      // The shell keeps only a tiny, gesture-unlocked UI sound context.
+      // It is silent during gameplay and does not own emulator audio.
+      function stopBootSound() {}
+      function playBootSound() { XmbAudio.boot(); }
+
+      // EmulatorJS owns the gameplay audio pipeline. The shell never resamples
+      // or rewrites core audio; this avoids pitch distortion and frame throttling.
+
+      // --- CUSTOM AUDIO GLUE & VOLUME LOGIC ---
+      let currentVol = 0.72;
+      let volTimeout;
+      const volOsd = document.getElementById('volume-osd');
+      const volFill = document.getElementById('vol-fill');
+      const volBtn = document.querySelector('.volume');
+
+      function showVolume() {
+        volOsd.classList.add('show');
+        volFill.style.width = (currentVol * 100) + '%';
+        clearTimeout(volTimeout);
+        volTimeout = setTimeout(() => volOsd.classList.remove('show'), 2000);
+      }
+
+      function changeVolume(delta) {
+        haptic('tick');
+        currentVol = Math.max(0, Math.min(1, currentVol + delta));
+        
+        if (emu.audio && typeof emu.audio.setVolume === 'function') {
+            emu.audio.setVolume(currentVol);
+        }
+        if (emu.mode === 'ejs') {
+          try {
+            if (window.EJS_emulator && typeof window.EJS_emulator.setVolume === 'function') {
+              window.EJS_emulator.setVolume(currentVol);
+            }
+            resumeCoreAudio();
+          } catch(e) {}
+        }
+        
+        volBtn.style.filter = 'brightness(0.6)';
+        setTimeout(() => volBtn.style.filter = 'none', 100);
+
+        showVolume();
+      }
+
+      const handleVolDown = (e) => { e.stopPropagation(); changeVolume(-0.1); };
+      const handleVolUp = (e) => { e.stopPropagation(); changeVolume(0.1); };
+
+      var volDownBox = document.querySelector('.vol-hitbox.down');
+      var volUpBox = document.querySelector('.vol-hitbox.up');
+      var volDownProxy = createIosHapticProxy(volDownBox, 'VOLUME DOWN');
+      var volUpProxy = createIosHapticProxy(volUpBox, 'VOLUME UP');
+      volDownProxy.addEventListener('pointerdown', handleVolDown, { passive: false });
+      volUpProxy.addEventListener('pointerdown', handleVolUp, { passive: false });
+
+
+      // 3. Joystick drag physics + proportional analogue input.
+      const mushrooms = document.querySelectorAll('.mushroom');
+      const maxDragRadius = 12;
+      const STICK_THRESHOLD = 4;
+      var stickDir = {};
+
+      function sendAnalogPair(positiveIndex, negativeIndex, amount) {
+        amount = Math.max(-1, Math.min(1, Number(amount) || 0));
+        var pos = amount > 0 ? Math.round(32767 * amount) : 0;
+        var neg = amount < 0 ? Math.round(32767 * -amount) : 0;
+        emu.pendingInputs[positiveIndex] = pos;
+        emu.pendingInputs[negativeIndex] = neg;
+        applyDirectInput(positiveIndex, pos);
+        applyDirectInput(negativeIndex, neg);
+      }
+
+      function sendStickVector(stickIndex, x, y) {
+        if (!emu.running || emu.mode !== 'ejs') return;
+        if (stickIndex === 0) {
+          // RetroPad analogue: right, left, down, up.
+          sendAnalogPair(16, 17, x);
+          sendAnalogPair(18, 19, y);
+        } else if (emu.system === 'n64') {
+          // The Switch right stick acts as the four N64 C-buttons.
+          var right = x > .45 ? 32767 : 0, left = x < -.45 ? 32767 : 0;
+          var down = y > .45 ? 32767 : 0, up = y < -.45 ? 32767 : 0;
+          [[20,right],[21,left],[22,down],[23,up]].forEach(function(pair) {
+            emu.pendingInputs[pair[0]] = pair[1];
+            applyDirectInput(pair[0], pair[1]);
+          });
+        }
+      }
+
+      mushrooms.forEach(function(stick, idx) {
+        var stickTarget = createIosHapticProxy(stick, idx === 0 ? 'LEFT STICK' : 'RIGHT STICK');
+        var activePointer = null, centerX = 0, centerY = 0;
+        var stickId = 'stick-' + (idx === 0 ? 'left' : 'right');
+        stickDir[stickId] = null;
+
+        function startDrag(e) {
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          e.preventDefault(); e.stopPropagation();
+          activePointer = e.pointerId;
+          try { stickTarget.setPointerCapture(e.pointerId); } catch(ignore) {}
+          var rect = stickTarget.getBoundingClientRect();
+          centerX = rect.left + rect.width / 2;
+          centerY = rect.top + rect.height / 2;
+          stick.classList.add('dragging', 'active');
+          haptic('soft');
+          doDrag(e);
+        }
+
+        function doDrag(e) {
+          if (activePointer === null || e.pointerId !== activePointer) return;
+          e.preventDefault();
+          var dx = e.clientX - centerX, dy = e.clientY - centerY;
+          var distance = Math.sqrt(dx * dx + dy * dy);
+          var clamped = Math.min(distance, maxDragRadius);
+          var angle = Math.atan2(dy, dx);
+          var tx = distance ? Math.cos(angle) * clamped : 0;
+          var ty = distance ? Math.sin(angle) * clamped : 0;
+          stick.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+
+          if (emu.running) {
+            var normX = Math.abs(dx) < STICK_THRESHOLD ? 0 : Math.max(-1, Math.min(1, dx / maxDragRadius));
+            var normY = Math.abs(dy) < STICK_THRESHOLD ? 0 : Math.max(-1, Math.min(1, dy / maxDragRadius));
+            sendStickVector(idx, normX, normY);
+            return;
+          }
+
+          var newDir = null;
+          if (distance > STICK_THRESHOLD) {
+            newDir = 'btn-' + (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+          }
+          if (newDir !== stickDir[stickId]) {
+            if (stickDir[stickId]) releaseButton(stickDir[stickId]);
+            stickDir[stickId] = newDir;
+            if (newDir) pressButton(newDir);
+          }
+        }
+
+        function stopDrag(e) {
+          if (activePointer === null || (e.pointerId !== undefined && e.pointerId !== activePointer)) return;
+          e.preventDefault();
+          activePointer = null;
+          stick.classList.remove('dragging', 'active');
+          stick.style.transform = '';
+          if (emu.running) sendStickVector(idx, 0, 0);
+          if (stickDir[stickId]) { releaseButton(stickDir[stickId]); stickDir[stickId] = null; }
+        }
+
+        stickTarget.addEventListener('pointerdown', startDrag, { passive: false });
+        stickTarget.addEventListener('pointermove', doDrag, { passive: false });
+        stickTarget.addEventListener('pointerup', stopDrag, { passive: false });
+        stickTarget.addEventListener('pointercancel', stopDrag, { passive: false });
+        stickTarget.addEventListener('lostpointercapture', stopDrag, { passive: false });
+        stickTarget.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+      });
+
+      // ===================================================================
+      // Multi-System Emulator Configuration
+      // ===================================================================
+      var GBA_BTN = {
+        'btn-a':0, 'btn-b':1, 'btn-x':0, 'btn-y':1,
+        'btn-select':2, 'btn-start':3,
+        'btn-right':4, 'btn-left':5, 'btn-up':6, 'btn-down':7,
+        'btn-r':8, 'btn-l':9
+      };
+
+      var KEYCODE_MAP = {
+        88: 'btn-a', 90: 'btn-b', 83: 'btn-x', 65: 'btn-y',
+        16: 'btn-select', 13: 'btn-start',
+        39: 'btn-right', 37: 'btn-left', 38: 'btn-up', 40: 'btn-down',
+        69: 'btn-r', 81: 'btn-l'
+      };
+
+      var CONTROL_MAP = {
+        55: 'vol-down', 56: 'vol-up', 52: 'speed-up',
+        51: 'speed-down', 53: 'speed-reset', 54: 'fullscreen'
+      };
+
+      // Supported ROM types and official EmulatorJS core identifiers.
+      var SYSTEM_DEFS = {
+        nes:    { key:'nes',    label:'Nintendo Entertainment System', short:'NES', core:'fceumm', extensions:['nes'] },
+        snes:   { key:'snes',   label:'Super Nintendo Entertainment System', short:'SNES', core:'snes9x', extensions:['sfc','smc','swc'] },
+        n64:    { key:'n64',    label:'Nintendo 64', short:'N64', core:'parallel_n64', extensions:['n64','z64','v64'] },
+        gb:     { key:'gb',     label:'Game Boy', short:'GB', core:'gambatte', extensions:['gb'] },
+        gbc:    { key:'gbc',    label:'Game Boy Color', short:'GBC', core:'gambatte', extensions:['gbc'] },
+        gba:    { key:'gba',    label:'Game Boy Advance', short:'GBA', core:'mgba', extensions:['gba'] },
+        nds:    { key:'nds',    label:'Nintendo DS', short:'NDS', core:'desmume2015', extensions:['nds'] },
+        segaMD: { key:'segaMD', label:'Sega Genesis / Mega Drive', short:'GEN', core:'genesis_plus_gx', extensions:['md','gen','smd','bin'] }
+      };
+
+      function extensionOf(name) {
+        var m = String(name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+        return m ? m[1] : '';
+      }
+
+      function detectSystem(name) {
+        var ext = extensionOf(name);
+        var keys = Object.keys(SYSTEM_DEFS);
+        for (var i = 0; i < keys.length; i++) {
+          var def = SYSTEM_DEFS[keys[i]];
+          if (def.extensions.indexOf(ext) > -1) return def;
+        }
+        return null;
+      }
+
+      function normaliseGameSystem(game) {
+        if (game && game.system && SYSTEM_DEFS[game.system]) return SYSTEM_DEFS[game.system];
+        var detected = detectSystem(game && (game.filename || game.title || game.id));
+        return detected || SYSTEM_DEFS.gba; // Legacy installs in earlier builds were GBA-only.
+      }
+
+      // RetroArch/libretro joypad indices used by EmulatorJS.
+      // Sending these directly is considerably more reliable than synthesising
+      // browser KeyboardEvent objects inside the embedded core.
+      var EJS_INPUT_MAP = {
+        'btn-b':0, 'btn-y':1, 'btn-select':2, 'btn-start':3,
+        'btn-up':4, 'btn-down':5, 'btn-left':6, 'btn-right':7,
+        'btn-a':8, 'btn-x':9, 'btn-l':10, 'btn-r':11,
+        'stick-right':16, 'stick-left':17, 'stick-down':18, 'stick-up':19,
+        'rstick-right':20, 'rstick-left':21, 'rstick-down':22, 'rstick-up':23
+      };
+
+      var emu = {
+        iodine: null, blitter: null, audio: null, rafId: null,
+        running: false, mode: null, system: null,
+        coreReady: false, gameStarted: false,
+        pendingInputs: Object.create(null),
+        loaderStarted: false, activeGameId: '', activeGame: null,
+        recoveryTimer: 0, frameWatchTimer: 0, lastFrame: -1, stalledTicks: 0, frameWatchArmed: false,
+        contextLost: false, recoveryReloading: false, recoverySavePromise: null, loadingStageTimer: 0, returningHome: false, bootAnimationStartedAt: 0
+      };
+
+      var IS_IOS = /iP(ad|hone|od)/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      // EmulatorJS selects the modern WebGL2 core automatically when available.
+
+
+      // Keep the original GBA audio object available for legacy compatibility.
+      emu.audio = null;
+
+      var emuSpeed = 1.0;
+      var TICK_MS = 16;
+      var accumulator = 0;
+      var lastRaf = 0;
+      var gameUnlockContext = null;
+      var cachedCoreAudioContext = null;
+      var coreAudioUnlocked = false;
+
+      function installAudioContextBridge() {
+        // Do not replace AudioContext constructors. EmulatorJS must own each
+        // gameplay audio context; sharing one shell context causes distortion.
+        primeGameAudio();
+      }
+
+      function restoreAudioContextBridge() {
+        // Build 14 never changes the browser AudioContext constructors.
+      }
+
+      function primeGameAudio() {
+        try {
+          if (navigator.audioSession) navigator.audioSession.type = 'playback';
+        } catch(e) {}
+        try {
+          if (!gameUnlockContext && NativeAudioContext) {
+            gameUnlockContext = new NativeAudioContext({ latencyHint: 'interactive' });
+            var osc = gameUnlockContext.createOscillator();
+            var gain = gameUnlockContext.createGain();
+            gain.gain.value = 0.00001;
+            osc.connect(gain); gain.connect(gameUnlockContext.destination);
+            osc.start(); osc.stop(gameUnlockContext.currentTime + .025);
+          }
+          if (gameUnlockContext && gameUnlockContext.state === 'suspended') {
+            gameUnlockContext.resume().catch(function(){});
+          }
+        } catch(e) {}
+      }
+
+      function resumeCoreAudio(force) {
+        // Resume the shell unlock context and the EmulatorJS context once.
+        // Do not scan the entire WASM/SDL object graph on every frame or input.
+        primeGameAudio();
+        try {
+          if (!cachedCoreAudioContext || force) {
+            var e = window.EJS_emulator;
+            var m = e && e.gameManager && e.gameManager.Module;
+            var candidates = [
+              e && e.audioContext,
+              e && e.gameManager && e.gameManager.audioContext,
+              m && m.audioContext,
+              m && m.SDL2 && m.SDL2.audioContext
+            ];
+            cachedCoreAudioContext = null;
+            for (var i = 0; i < candidates.length; i++) {
+              if (candidates[i] && typeof candidates[i].resume === 'function') {
+                cachedCoreAudioContext = candidates[i];
+                break;
+              }
+            }
+          }
+          var ctx = cachedCoreAudioContext;
+          if (ctx && ctx.state === 'suspended') {
+            ctx.resume().then(function(){ coreAudioUnlocked = true; }).catch(function(){});
+          } else if (ctx && ctx.state === 'running') {
+            coreAudioUnlocked = true;
+          }
+        } catch(e) {}
+      }
+
+      function setRecoveryOverlay(show, title, detail) {
+        var box = document.getElementById('game-recovery');
+        if (!box) return;
+        var t = document.getElementById('game-recovery-title');
+        var d = document.getElementById('game-recovery-detail');
+        if (t && title) t.textContent = title;
+        if (d && detail) d.textContent = detail;
+        box.classList.toggle('show', !!show);
+      }
+
+      function recoveryKey(gameId) {
+        return '__recovery__::' + String(gameId || 'unknown');
+      }
+
+      function saveRecoveryState(reason) {
+        if (emu.recoverySavePromise) return emu.recoverySavePromise;
+        if (!emu.gameStarted || !emu.activeGameId) return Promise.resolve(false);
+        var gm = window.EJS_emulator && window.EJS_emulator.gameManager;
+        if (!gm || typeof gm.getState !== 'function') return Promise.resolve(false);
+        var state;
+        try {
+          state = gm.getState();
+          if (!state || !state.byteLength) return Promise.resolve(false);
+        } catch(e) { return Promise.resolve(false); }
+        var copy = (state.byteOffset === 0 && state.byteLength === state.buffer.byteLength)
+          ? state.buffer : state.buffer.slice(state.byteOffset, state.byteOffset + state.byteLength);
+        safeSetItem('csd_active_game', emu.activeGameId);
+        safeSetItem('csd_session_clean', '0');
+        emu.recoverySavePromise = initDB().then(function(db) {
+          if (!db) return false;
+          return dbPut(db, {
+            id: recoveryKey(emu.activeGameId),
+            gameId: emu.activeGameId,
+            system: emu.system || '',
+            state: copy,
+            savedAt: Date.now(),
+            reason: String(reason || 'autosave')
+          }).then(function(){ return true; }).catch(function(){ return false; });
+        }).catch(function(){ return false; }).then(function(result) {
+          emu.recoverySavePromise = null;
+          return result;
+        });
+        return emu.recoverySavePromise;
+      }
+
+      function restoreRecoveryState(gameId, shouldRestore) {
+        if (!shouldRestore) return Promise.resolve(false);
+        return initDB().then(function(db) {
+          if (!db) return null;
+          return dbGet(db, recoveryKey(gameId));
+        }).then(function(rec) {
+          if (!rec || !rec.state || (Date.now() - Number(rec.savedAt || 0)) > 86400000) return false;
+          var gm = window.EJS_emulator && window.EJS_emulator.gameManager;
+          if (!gm || typeof gm.loadState !== 'function') return false;
+          try {
+            gm.loadState(new Uint8Array(rec.state));
+            setRecoveryOverlay(true, 'GAME RESTORED', 'Recovered the latest verified crash checkpoint.');
+            setTimeout(function(){ setRecoveryOverlay(false); }, 1400);
+            return true;
+          } catch(e) { return false; }
+        }).catch(function(){ return false; });
+      }
+
+      function enterGamePerformanceMode() {
+        try {
+          var video = document.getElementById('camera-bg');
+          if (video && video.srcObject) {
+            video.srcObject.getTracks().forEach(function(track){ track.stop(); });
+            video.srcObject = null;
+          }
+          document.body.classList.remove('camera-active');
+        } catch(e) {}
+        try {
+          var bg = document.getElementById('game-bg-layer');
+          var wallpaper = document.getElementById('wallpaper-layer');
+          if (bg) { bg.style.backgroundImage = 'none'; bg.style.opacity = 0; }
+          if (wallpaper) wallpaper.style.backgroundImage = 'none';
+          document.querySelectorAll('.dynamic-game').forEach(function(el){ el.remove(); });
+          document.querySelectorAll('.boot-sequence').forEach(function(el){ el.textContent = ''; });
+          gameCache = Object.create(null);
+        } catch(e) {}
+      }
+
+      function controlledRecoveryReload(reason) {
+        if (emu.recoveryReloading) return;
+        emu.recoveryReloading = true;
+        setRecoveryOverlay(true, 'RECOVERING GAME', 'The video renderer stopped. Saving progress and restarting safely…');
+        var finish = function() {
+          safeSetItem('csd_recover_pending', emu.activeGameId || '');
+          safeSetItem('csd_session_clean', '0');
+          location.reload();
+        };
+        var finished = false;
+        var done = function(){ if (finished) return; finished = true; finish(); };
+        saveRecoveryState(reason || 'renderer-reset').then(done).catch(done);
+        setTimeout(done, 700);
+      }
+
+      function attachCanvasResilience() {
+        var canvas = window.EJS_emulator && window.EJS_emulator.canvas;
+        if (!canvas || canvas.dataset.csdResilience === '1') return;
+        canvas.dataset.csdResilience = '1';
+        canvas.addEventListener('webglcontextlost', function(e) {
+          try { e.preventDefault(); } catch(ignore) {}
+          emu.contextLost = true;
+          setRecoveryOverlay(true, 'VIDEO INTERRUPTED', 'Restoring the graphics context without losing progress…');
+          saveRecoveryState('webgl-context-lost');
+          setTimeout(function(){ if (emu.contextLost) controlledRecoveryReload('webgl-context-timeout'); }, 1800);
+        }, false);
+        canvas.addEventListener('webglcontextrestored', function() {
+          emu.contextLost = false;
+          setRecoveryOverlay(false);
+          try { window.EJS_emulator.handleResize(); } catch(ignore) {}
+          resumeCoreAudio();
+        }, false);
+      }
+
+      function startRecoveryGuards() {
+        if (emu.recoveryTimer) clearInterval(emu.recoveryTimer);
+        if (emu.frameWatchTimer) clearInterval(emu.frameWatchTimer);
+        emu.recoveryTimer = 0; emu.frameWatchTimer = 0;
+        emu.lastFrame = -1; emu.stalledTicks = 0; emu.frameWatchArmed = false;
+        // N64/DS must not serialize a full savestate or poll the WASM core while
+        // gameplay is active. WebGL context-loss events still trigger recovery.
+        if (emu.system === 'n64' || emu.system === 'nds') return;
+        emu.recoveryTimer = setInterval(function(){
+          if (document.visibilityState === 'visible') saveRecoveryState('interval');
+        }, 60000);
+      }
+
+      function teardownEmulatorCore() {
+        releaseAllInputs();
+        if (emu.recoveryTimer) { clearInterval(emu.recoveryTimer); emu.recoveryTimer = 0; }
+        if (emu.frameWatchTimer) { clearInterval(emu.frameWatchTimer); emu.frameWatchTimer = 0; }
+        if (emu.loadingStageTimer) { clearTimeout(emu.loadingStageTimer); emu.loadingStageTimer = 0; }
+        try {
+          if (window.EJS_emulator && typeof window.EJS_emulator.callEvent === 'function') {
+            window.EJS_emulator.callEvent('exit');
+          }
+        } catch(ignore) {}
+        return new Promise(function(resolve) {
+          setTimeout(function() {
+            try {
+              if (window.EJS_emulator && typeof window.EJS_emulator.destroy === 'function') window.EJS_emulator.destroy();
+            } catch(ignore) {}
+            var host = document.getElementById('ejs-host');
+            if (host) { host.classList.remove('ejs_parent'); host.removeAttribute('style'); host.innerHTML = ''; }
+            window.EJS_emulator = null;
+            window.EJS_gameUrl = null;
+            window.EJS_ready = null;
+            window.EJS_onGameStart = null;
+            window.EJS_defaultOptions = null;
+            try {
+              if (gameWakeLock) gameWakeLock.release().catch(function(){});
+              gameWakeLock = null;
+            } catch(ignore) { gameWakeLock = null; }
+            try {
+              cachedCoreAudioContext = null; coreAudioUnlocked = false;
+              if (gameUnlockContext && gameUnlockContext.state === 'running') gameUnlockContext.suspend().catch(function(){});
+            } catch(ignore) { cachedCoreAudioContext = null; coreAudioUnlocked = false; }
+            var loader = document.getElementById('csd-emulatorjs-loader');
+            if (loader) loader.remove();
+            resolve();
+          }, 450);
+        });
+      }
+
+      function returnToXmbWithoutReload() {
+        setRecoveryOverlay(true, 'RETURNING HOME', 'Closing the emulator core and restoring the XMB…');
+        safeSetItem('csd_session_clean', '1');
+        safeSetItem('csd_recover_pending', '');
+        return teardownEmulatorCore().then(function() {
+          stopEmu();
+          var screenEl = document.getElementById('screen');
+          screenEl.classList.remove('game-running', 'power-off', 'is-booting');
+          screenEl.classList.add('os-ready');
+          isPoweredOn = true; isOSReady = false;
+          return Promise.all([buildXMB(), loadWallpaper()]).then(function() {
+            isOSReady = true; colIdx = Math.max(1, Math.min(colIdx, categories.length - 1)); rowIdx = 0;
+            updateXMB();
+            setRecoveryOverlay(false);
+          });
+        });
+      }
+
+      function stopEmu() {
+        emu.running = false;
+        emu.mode = null;
+        emu.system = null;
+        emu.coreReady = false;
+        emu.gameStarted = false;
+        emu.loaderStarted = false;
+        emu.activeGameId = '';
+        emu.activeGame = null;
+        emu.recoveryReloading = false;
+        emu.pendingInputs = Object.create(null);
+        cachedCoreAudioContext = null; coreAudioUnlocked = false;
+        if (emu.recoveryTimer) { clearInterval(emu.recoveryTimer); emu.recoveryTimer = 0; }
+        if (emu.frameWatchTimer) { clearInterval(emu.frameWatchTimer); emu.frameWatchTimer = 0; }
+        document.body.classList.remove('game-active');
+        var area = document.getElementById('game-area');
+        if (area) area.classList.remove('multi-core', 'loading', 'runtime-ready');
+        var host = document.getElementById('ejs-host');
+        if (host) host.innerHTML = '';
+        var canvas = document.getElementById('game-canvas');
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, 240, 160);
+      }
+
+      function renderError(title, msg) {
+        emu.running = false;
+        document.body.classList.remove('game-active');
+        document.getElementById('screen').classList.add('game-running');
+        var area = document.getElementById('game-area');
+        area.classList.remove('multi-core', 'loading', 'runtime-ready');
+        var canvas = document.getElementById('game-canvas');
+        canvas.style.display = 'block';
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, 240, 160);
+        ctx.fillStyle = '#ff5555'; ctx.font = 'bold 12px sans-serif'; ctx.fillText(title, 8, 70);
+        ctx.fillStyle = '#bbb'; ctx.font = '9px monospace';
+        var words = String(msg || '').split(' '), line = '', y = 88;
+        for (var w = 0; w < words.length; w++) {
+          var t = line + (line ? ' ' : '') + words[w];
+          if (ctx.measureText(t).width > 224 && line) { ctx.fillText(line, 8, y); line = words[w]; y += 12; }
+          else line = t;
+        }
+        if (line) ctx.fillText(line, 8, y);
+      }
+
+      function applyEmuSpeed() {
+        // Cores stay at native speed; disabling speed effects keeps iOS audio synchronized.
+      }
+
+      function numericGameId(text) {
+        var h = 2166136261 >>> 0;
+        text = String(text || 'CSD');
+        for (var i = 0; i < text.length; i++) {
+          h ^= text.charCodeAt(i);
+          h = Math.imul(h, 16777619) >>> 0;
+        }
+        return (h || 1) >>> 0;
+      }
+
+      function romBytesFromRecord(game) {
+        var rom = game && game.rom;
+        if (rom instanceof ArrayBuffer) return new Uint8Array(rom);
+        if (ArrayBuffer.isView(rom)) return new Uint8Array(rom.buffer, rom.byteOffset || 0, rom.byteLength);
+        if (rom && rom.buffer instanceof ArrayBuffer) return new Uint8Array(rom.buffer);
+        return null;
+      }
+
+      function hideGameLoading() {
+        var area = document.getElementById('game-area');
+        if (area) area.classList.remove('loading');
+        var boot = document.getElementById('game-loading');
+        if (boot) boot.classList.remove('boot-playing');
+      }
+
+      function applyDirectInput(index, value) {
+        try {
+          var gm = window.EJS_emulator && window.EJS_emulator.gameManager;
+          if (!gm || typeof gm.simulateInput !== 'function') return false;
+          gm.simulateInput(0, Number(index), Number(value));
+          return true;
+        } catch(e) { return false; }
+      }
+
+      function flushDirectInputs() {
+        var any = false;
+        Object.keys(emu.pendingInputs).forEach(function(k) {
+          any = applyDirectInput(k, emu.pendingInputs[k]) || any;
+        });
+        return any;
+      }
+
+      function flushQueuedInputsOnce() {
+        // Inputs are event-driven. A single flush when the core becomes ready
+        // is enough for any button held during startup.
+        flushDirectInputs();
+      }
+
+
+      var gameWakeLock = null;
+      function requestGameWakeLock() {
+        try {
+          if (navigator.wakeLock && !gameWakeLock) {
+            navigator.wakeLock.request('screen').then(function(lock) {
+              gameWakeLock = lock;
+              lock.addEventListener('release', function(){ gameWakeLock = null; });
+            }).catch(function(){});
+          }
+        } catch(e) {}
+      }
+
+      function startMultiCore(game) {
+        var def = normaliseGameSystem(game);
+        if (!def) { renderError('UNSUPPORTED ROM', 'This game type is not configured.'); return; }
+        if (!game || !game.id) { renderError('ROM NOT FOUND', 'The installed game record has no ID.'); return; }
+        if (emu.loaderStarted || window.EJS_emulator) {
+          renderError('RESTART REQUIRED', 'Return to the XMB with HOME before starting another game.');
+          return;
+        }
+        var romBytes = romBytesFromRecord(game);
+        if (!romBytes || !romBytes.byteLength) {
+          renderError('ROM NOT FOUND', 'The installed ROM record is empty or unreadable. Reinstall it.');
+          return;
+        }
+        try {
+          primeGameAudio();
+          requestGameWakeLock();
+          enterGamePerformanceMode();
+          installAudioContextBridge();
+          if (XmbAudio && typeof XmbAudio.suspend === 'function') XmbAudio.suspend();
+          stopBootSound();
+
+          var area = document.getElementById('game-area');
+          var host = document.getElementById('ejs-host');
+          host.innerHTML = '';
+          document.getElementById('game-canvas').style.display = '';
+
+          emu.mode = 'ejs';
+          emu.running = true;
+          emu.system = def.key;
+          emu.coreReady = false;
+          emu.gameStarted = false;
+          emu.loaderStarted = true;
+          emu.pendingInputs = Object.create(null);
+          cachedCoreAudioContext = null; coreAudioUnlocked = false;
+          emu.activeGameId = String(game.id || game.title || 'CSD');
+          emu.activeGame = game;
+          var shouldRestoreRecovery = safeGetItem('csd_recover_pending', '') === emu.activeGameId;
+          if (shouldRestoreRecovery) safeSetItem('csd_recover_pending', '');
+          safeSetItem('csd_active_game', emu.activeGameId);
+          safeSetItem('csd_session_clean', '0');
+
+          area.classList.add('multi-core', 'loading');
+          document.body.classList.add('game-active');
+          document.getElementById('screen').classList.add('game-running');
+          document.getElementById('screen').classList.remove('os-ready');
+          clearTimeout(emu.loadingStageTimer);
+          emu.loadingStageTimer = 0;
+          emu.bootAnimationStartedAt = Date.now();
+          var gameBoot = document.getElementById('game-loading');
+          if (gameBoot) {
+            gameBoot.classList.remove('boot-playing');
+            void gameBoot.offsetWidth;
+            gameBoot.classList.add('boot-playing');
+          }
+
+          // Same-document loading preserves the page's iOS user activation and
+          // removes the iframe boundary that produced the extra resume tap.
+          window.EJS_player = '#ejs-host';
+          window.EJS_core = def.core;
+          window.EJS_controlScheme = def.key === 'segaMD' ? 'segaMD' : (def.key === 'gbc' ? 'gb' : def.key);
+          window.EJS_gameUrl = romBytes;
+          window.EJS_gameName = game.filename || ((game.title || 'CSD Game') + (game.extension ? '.' + game.extension : ''));
+          window.EJS_gameID = numericGameId(String(game.id || game.title || 'CSD'));
+          window.EJS_pathtodata = './data/';
+          window.EJS_startOnLoaded = true;
+          window.EJS_volume = currentVol;
+          window.EJS_color = '#69a7ff';
+          window.EJS_backgroundColor = '#000';
+          window.EJS_backgroundBlur = false;
+          window.EJS_browserMode = 'mobile';
+          window.EJS_noAutoFocus = true;
+          window.EJS_askBeforeExit = false;
+          window.EJS_threads = false;
+          window.EJS_forceLegacyCores = false;
+          window.EJS_disableDatabases = IS_IOS;
+          window.EJS_disableAutoLang = true;
+          window.EJS_language = 'en-US';
+          window.EJS_disableLocalStorage = true;
+          window.EJS_DEBUG_XX = false;
+          window.CSD_RUNTIME_VERSION = '14.2.1';
+          window.EJS_defaultOptions = { shader:'disabled' };
+          window.EJS_hideSettings = ['shader','fps','slowMotion','fastForward','virtual-gamepad'];
+          window.EJS_Buttons = {
+            playPause:false,play:false,pause:false,restart:false,mute:false,unmute:false,
+            settings:false,fullscreen:false,enterFullscreen:false,exitFullscreen:false,
+            saveState:false,loadState:false,screenRecord:false,gamepad:false,cheat:false,
+            volume:false,saveSavFiles:false,loadSavFiles:false,quickSave:false,quickLoad:false,
+            screenshot:false,cacheManager:false,exitEmulation:false
+          };
+
+          window.EJS_ready = function() {
+            emu.coreReady = true;
+            resumeCoreAudio(true);
+            flushQueuedInputsOnce();
+          };
+          window.EJS_onGameStart = function() {
+            emu.gameStarted = true;
+            clearTimeout(emu.loadingStageTimer); emu.loadingStageTimer = 0;
+            setTimeout(restoreAudioContextBridge, 400);
+            area.classList.add('runtime-ready');
+            var bootElapsed = Date.now() - (emu.bootAnimationStartedAt || Date.now());
+            var bootRemaining = Math.max(0, 3550 - bootElapsed);
+            setTimeout(hideGameLoading, bootRemaining);
+            setRecoveryOverlay(false);
+            if (def.key === 'n64') {
+              var mapMsg = document.getElementById('sys-msg');
+              if (mapMsg) {
+                mapMsg.textContent = 'N64: A/B · MINUS = Z · LEFT STICK = ANALOG · RIGHT STICK = C BUTTONS';
+                mapMsg.style.opacity = 1;
+                setTimeout(function(){ if (emu.running) mapMsg.style.opacity = 0; }, 2600);
+              }
+            }
+            resumeCoreAudio(true);
+            flushQueuedInputsOnce();
+            attachCanvasResilience();
+            startRecoveryGuards();
+            setTimeout(function(){ restoreRecoveryState(emu.activeGameId, shouldRestoreRecovery); }, 120);
+            // The core has copied the ROM into its virtual filesystem. Drop the
+            // original IndexedDB/config references so iOS does not retain 2–3 copies.
+            try {
+              if (window.EJS_emulator && window.EJS_emulator.config) window.EJS_emulator.config.gameUrl = 'game';
+              window.EJS_gameUrl = null;
+              if (game && game.rom) game.rom = null;
+              emu.activeGame = null;
+            } catch(ignore) {}
+          };
+
+          var script = document.createElement('script');
+          script.id = 'csd-emulatorjs-loader';
+          script.src = './data/loader.js?v=14.2.1';
+          script.onerror = function() {
+            restoreAudioContextBridge();
+            renderError('CORE BOOT FAILED', 'The local EmulatorJS runtime is missing. Upload the complete Build 14 folder.');
+          };
+          document.head.appendChild(script);
+        } catch(e) {
+          restoreAudioContextBridge();
+          emu.loaderStarted = false;
+          renderError('CORE BOOT FAILED', String(e && e.message ? e.message : e));
+        }
+      }
+
+      document.addEventListener('visibilitychange', function() {
+        if (!emu.running) return;
+        if (document.visibilityState === 'hidden') {
+          releaseAllInputs();
+          if (emu.system !== 'n64' && emu.system !== 'nds') saveRecoveryState('background');
+          return;
+        }
+        primeGameAudio();
+        requestGameWakeLock();
+        coreAudioUnlocked = false;
+        resumeCoreAudio(true);
+        try { if (window.EJS_emulator) window.EJS_emulator.handleResize(); } catch(ignore) {}
+      });
+      window.addEventListener('blur', function() { if (emu.running) releaseAllInputs(); });
+
+      window.addEventListener('pageshow', function() {
+        if (emu.running) { primeGameAudio(); coreAudioUnlocked = false; resumeCoreAudio(true); }
+      });
+
+      function ejsIndexFor(btnId) {
+        if (emu.system === 'n64') {
+          var n64 = {
+            'btn-a':0, 'btn-b':1, 'btn-start':3,
+            'btn-up':4, 'btn-down':5, 'btn-left':6, 'btn-right':7,
+            'btn-l':10, 'btn-r':11, 'btn-select':12,
+            'btn-x':23, 'btn-y':21,
+            'rstick-right':20, 'rstick-left':21, 'rstick-down':22, 'rstick-up':23,
+            'stick-right':16, 'stick-left':17, 'stick-down':18, 'stick-up':19
+          };
+          return n64[btnId];
+        }
+        if (btnId.indexOf('stick-') === 0) return EJS_INPUT_MAP['btn-' + btnId.substring(6)];
+        if (btnId.indexOf('rstick-') === 0) return undefined;
+        return EJS_INPUT_MAP[btnId];
+      }
+
+      function sendInput(btnId, isDown) {
+        if (!emu.running || emu.mode !== 'ejs') return;
+        var index = ejsIndexFor(btnId);
+        if (index === undefined) return;
+        var analogue = index >= 16 && index <= 23;
+        var value = isDown ? (analogue ? 32767 : 1) : 0;
+        emu.pendingInputs[index] = value;
+        if (emu.coreReady) applyDirectInput(index, value);
+      }
+
+      function releaseAllInputs() {
+        Object.keys(held).forEach(function(id) {
+          try { sendInput(id, false); } catch(ignore) {}
+        });
+        held = {};
+        Object.keys(emu.pendingInputs || {}).forEach(function(index) {
+          try { applyDirectInput(Number(index), 0); } catch(ignore) {}
+        });
+        emu.pendingInputs = Object.create(null);
+        mushrooms.forEach(function(stick) { stick.classList.remove('dragging', 'active'); stick.style.transform = ''; });
+      }
+
+      // ===================================================================
+      // Storage (IndexedDB + memory fallback)
+      // ===================================================================
+      var DB_NAME = 'GMX_GBA_Storage', STORE = 'library', META_STORE = 'catalog';
+      var dbPromise = null;
+      // Build 10/11 referenced these before declaration on a clean launch,
+      // aborting DOMContentLoaded and leaving only the raw grey screen.
+      var memFallback = false;
+      var memStore = { games: Object.create(null), bios: null, wallpaper: null };
+
+      function gameMetadata(rec) {
+        if (!rec || !rec.id || String(rec.id).indexOf('__') === 0) return null;
+        return {
+          id: rec.id,
+          title: rec.title || 'Untitled Game',
+          filename: rec.filename || '',
+          extension: rec.extension || extensionOf(rec.filename || ''),
+          system: rec.system || 'gba',
+          core: rec.core || '',
+          cover: rec.cover || ''
+        };
+      }
+
+      function initDB() {
+        if (memFallback) return Promise.resolve(null);
+        if (dbPromise) return dbPromise;
+        dbPromise = new Promise(function(resolve) {
+          try {
+            var req = indexedDB.open(DB_NAME, 2);
+            req.onupgradeneeded = function(e) {
+              var db = e.target.result;
+              var tx = e.target.transaction;
+              var library = db.objectStoreNames.contains(STORE)
+                ? tx.objectStore(STORE)
+                : db.createObjectStore(STORE, { keyPath: 'id' });
+              var catalog = db.objectStoreNames.contains(META_STORE)
+                ? tx.objectStore(META_STORE)
+                : db.createObjectStore(META_STORE, { keyPath: 'id' });
+              // Build a lightweight catalog for existing installations without
+              // retaining every ROM ArrayBuffer in memory on the XMB screen.
+              if (e.oldVersion < 2) {
+                library.openCursor().onsuccess = function(ev) {
+                  var cursor = ev.target.result;
+                  if (!cursor) return;
+                  var meta = gameMetadata(cursor.value);
+                  if (meta) catalog.put(meta);
+                  cursor.continue();
+                };
+              }
+            };
+            req.onsuccess = function() {
+              var db = req.result;
+              db.onversionchange = function() { db.close(); dbPromise = null; };
+              resolve(db);
+            };
+            req.onerror = function() { memFallback = true; dbPromise = null; resolve(null); };
+          } catch(e) { memFallback = true; dbPromise = null; resolve(null); }
+        });
+        return dbPromise;
+      }
+
+      function dbPut(db, rec) {
+        return new Promise(function(res, rej) {
+          var meta = gameMetadata(rec);
+          var stores = meta ? [STORE, META_STORE] : [STORE];
+          var tx = db.transaction(stores, 'readwrite');
+          tx.objectStore(STORE).put(rec);
+          if (meta) tx.objectStore(META_STORE).put(meta);
+          tx.oncomplete = res; tx.onerror = rej; tx.onabort = rej;
+        });
+      }
+
+      function dbGet(db, key) {
+        return new Promise(function(res) {
+          var tx = db.transaction(STORE, 'readonly');
+          var req = tx.objectStore(STORE).get(key);
+          req.onsuccess = function() { res(req.result || null); };
+          req.onerror = function() { res(null); };
+        });
+      }
+
+      function dbGetAllMetadata(db) {
+        return new Promise(function(res) {
+          var tx = db.transaction(META_STORE, 'readonly');
+          var req = tx.objectStore(META_STORE).getAll();
+          req.onsuccess = function() { res(req.result || []); };
+          req.onerror = function() { res([]); };
+        });
+      }
+
+      function dbDelete(db, key) {
+        return new Promise(function(res, rej) {
+          var tx = db.transaction([STORE, META_STORE], 'readwrite');
+          tx.objectStore(STORE).delete(key);
+          tx.objectStore(META_STORE).delete(key);
+          tx.oncomplete = res; tx.onerror = rej; tx.onabort = rej;
+        });
+      }
+
+      function saveBios(file) {
+        return file.arrayBuffer().then(function(buf) {
+          return initDB().then(function(db) {
+            if (!db) { memStore.bios = buf; return; }
+            return dbPut(db, { id: '__bios__', data: buf });
+          });
+        });
+      }
+
+      function saveGame(romFile, imgFile) {
+        var def = detectSystem(romFile && romFile.name);
+        if (!def) return Promise.reject(new Error('Unsupported ROM type'));
+        return romFile.arrayBuffer().then(function(romBuf) {
+          var coverP = imgFile
+            ? new Promise(function(res) { var r = new FileReader(); r.onload = function(e) { res(e.target.result); }; r.readAsDataURL(imgFile); })
+            : Promise.resolve('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+          return coverP.then(function(cover) {
+            var title = romFile.name.replace(/\.[^/.]+$/, '');
+            var id = 'game::' + def.key + '::' + title;
+            var rec = {
+              id: id,
+              title: title,
+              filename: romFile.name,
+              extension: extensionOf(romFile.name),
+              system: def.key,
+              core: def.core,
+              rom: romBuf,
+              cover: cover
+            };
+            return initDB().then(function(db) {
+              if (!db) { memStore.games[id] = rec; return; }
+              return dbPut(db, rec);
+            });
+          });
+        });
+      }
+
+      function applyWallpaper(dataUrl) {
+        var layer = document.getElementById('wallpaper-layer');
+        if (!layer) return;
+        if (dataUrl) {
+          layer.style.backgroundImage = 'url(' + JSON.stringify(dataUrl) + ')';
+          layer.classList.add('has-wallpaper');
+        } else {
+          layer.style.backgroundImage = 'none';
+          layer.classList.remove('has-wallpaper');
+        }
+      }
+
+      function saveWallpaper(file) {
+        return new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var dataUrl = e.target.result;
+            initDB().then(function(db) {
+              if (!db) {
+                memStore.wallpaper = dataUrl;
+                try { localStorage.setItem('gmx_screen_wallpaper', dataUrl); } catch(err) {}
+                applyWallpaper(dataUrl);
+                resolve();
+                return;
+              }
+              dbPut(db, { id: '__wallpaper__', data: dataUrl }).then(function() {
+                applyWallpaper(dataUrl);
+                resolve();
+              }).catch(reject);
+            });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function loadWallpaper() {
+        return initDB().then(function(db) {
+          if (!db) {
+            var fallback = memStore.wallpaper;
+            if (!fallback) {
+              try { fallback = localStorage.getItem('gmx_screen_wallpaper'); } catch(e) {}
+            }
+            applyWallpaper(fallback || null);
+            return;
+          }
+          return dbGet(db, '__wallpaper__').then(function(rec) {
+            applyWallpaper(rec && rec.data ? rec.data : null);
+          });
+        });
+      }
+
+      function removeWallpaper() {
+        return initDB().then(function(db) {
+          if (!db) {
+            memStore.wallpaper = null;
+            try { localStorage.removeItem('gmx_screen_wallpaper'); } catch(e) {}
+            applyWallpaper(null);
+            return;
+          }
+          return dbDelete(db, '__wallpaper__').then(function() { applyWallpaper(null); });
+        });
+      }
+
+      loadWallpaper();
+
+      function loadGame(game) {
+        if (!game || !game.rom) { renderError('ROM NOT FOUND', 'The installed game data is missing.'); return; }
+        startMultiCore(game);
+      }
+
+      // Backward-compatible helper for any legacy caller.
+      function loadRom(romData) {
+        loadGame({ id:'legacy-gba', title:'Legacy GBA Game', system:'gba', rom:romData });
+      }
+
+      // ===================================================================
+      // XMB OS & COLOR PICKER LOGIC
+      // ===================================================================
+      var isPoweredOn = false, isOSReady = false, colIdx = 1, rowIdx = 0, maxRows = [5,1,1];
+      var gameCache = Object.create(null); 
+      var bootTimers = [];
+      var currentColorTarget = '';
+
+      function fitTextToWidth(el, maxPx, minPx) {
+        if (!el) return;
+        var size = maxPx;
+        el.style.fontSize = size + 'px';
+        while (size > minPx && el.scrollWidth > el.clientWidth + 1) {
+          size -= 0.35;
+          el.style.fontSize = size + 'px';
+        }
+        el.classList.add('xmb-fit-text');
+      }
+
+      function fitAllXmbText() {
+        document.querySelectorAll('.xmb-sub:not(.game-item)').forEach(function(el) {
+          fitTextToWidth(el, el.classList.contains('active-item') ? 12.8 : 12.1, 10.6);
+        });
+        document.querySelectorAll('.game-title').forEach(function(el) { fitTextToWidth(el, 13.2, 10.4); });
+        document.querySelectorAll('.xmb-main span').forEach(function(el) { fitTextToWidth(el, 13.4, 10.8); });
+      }
+
+      function renderGameList(games) {
+        gameCache = Object.create(null);
+        var col = document.getElementById('game-column');
+        var stick = document.getElementById('memory-stick');
+        col.querySelectorAll('.dynamic-game').forEach(function(el) { el.remove(); });
+        var count = 1;
+        games.forEach(function(g) {
+          if (!g || String(g.id || '').indexOf('__') === 0) return;
+          gameCache[String(g.id || g.title || '')] = g;
+          var def = normaliseGameSystem(g);
+          var d = document.createElement('div');
+          d.className = 'xmb-sub game-item dynamic-game';
+          d.dataset.gameId = String(g.id || g.title || '');
+          d.dataset.system = def.key;
+
+          var img = document.createElement('img');
+          img.className = 'box-art';
+          img.alt = '';
+          img.src = g.cover || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+          var details = document.createElement('div');
+          details.className = 'game-details';
+          var title = document.createElement('span');
+          title.className = 'game-title';
+          title.textContent = g.title || 'Untitled Game';
+          var badge = document.createElement('span');
+          badge.className = 'system-badge';
+          badge.textContent = def.short;
+          details.appendChild(title);
+          details.appendChild(badge);
+          d.appendChild(img);
+          d.appendChild(details);
+          col.insertBefore(d, stick);
+          count++;
+        });
+        maxRows[1] = count;
+        requestAnimationFrame(fitAllXmbText);
+      }
+
+      function buildXMB() {
+        return initDB().then(function(db) {
+          if (!db) { renderGameList(Object.values(memStore.games)); return; }
+          return dbGetAllMetadata(db).then(renderGameList);
+        });
+      }
+
+      function updateXMB() {
+        if (!isOSReady) return;
+        var grid = document.getElementById('xmb-grid');
+        var cols = document.querySelectorAll('.xmb-col');
+        var sysMsg = document.getElementById('sys-msg');
+        var bgLayer = document.getElementById('game-bg-layer');
+        grid.style.transform = 'translate(calc(-50% + ' + ((1 - colIdx) * 166) + 'px), ' + (-rowIdx * 50) + 'px)';
+        cols.forEach(function(col, c) {
+          var active = (c === colIdx);
+          col.classList.toggle('active-col', active);
+          Array.from(col.children).forEach(function(ch, r) { ch.classList.toggle('active-item', active && r === rowIdx); });
+        });
+        var img = document.querySelector('.active-col .active-item.dynamic-game img');
+        if (img) { bgLayer.style.backgroundImage = 'linear-gradient(to right,rgba(15,16,26,0.95) 0%,rgba(15,16,26,0.5) 60%,rgba(0,0,0,0) 100%),url(' + img.src + ')'; bgLayer.style.opacity = 1; }
+        else bgLayer.style.opacity = 0;
+        var games = document.querySelectorAll('.dynamic-game');
+        var helpPrimary = document.getElementById('xmb-help-primary');
+        var helpSecondary = document.getElementById('xmb-help-secondary');
+        if (helpPrimary) helpPrimary.innerText = (colIdx === 1 && rowIdx > 0 && rowIdx <= games.length) ? 'Start' : 'Enter';
+        if (helpSecondary) helpSecondary.innerText = (colIdx === 1 && rowIdx > 0 && rowIdx <= games.length) ? 'Delete' : 'Back';
+        if (colIdx === 1 && rowIdx > 0 && rowIdx <= games.length) { sysMsg.innerText = 'B  Delete Game'; sysMsg.style.opacity = 1; }
+        else { sysMsg.innerText = ''; sysMsg.style.opacity = 0; }
+        requestAnimationFrame(fitAllXmbText);
+      }
+
+      window.addEventListener('resize', function(){ if (isOSReady) requestAnimationFrame(fitAllXmbText); }, { passive:true });
+
+      function popupVisible() { return document.getElementById('install-popup').classList.contains('visible'); }
+      function navLeft()  { if (colIdx > 0 && isOSReady && !popupVisible()) { colIdx--; rowIdx = 0; XmbAudio.play('move'); updateXMB(); } }
+      function navRight() { if (colIdx < 2 && isOSReady && !popupVisible()) { colIdx++; rowIdx = 0; XmbAudio.play('move'); updateXMB(); } }
+      function navUp()    { if (rowIdx > 0 && isOSReady && !popupVisible()) { rowIdx--; XmbAudio.play('move'); updateXMB(); } }
+      function navDown()  { if (rowIdx < maxRows[colIdx] && isOSReady && !popupVisible()) { rowIdx++; XmbAudio.play('move'); updateXMB(); } }
+
+      function triggerA() {
+        if (!isOSReady || popupVisible()) return;
+        XmbAudio.play('confirm');
+        XmbAudio.ensure();
+        if (emu.audio && typeof emu.audio.resume === 'function') emu.audio.resume();
+
+        var sysMsg = document.getElementById('sys-msg');
+        
+        if (colIdx === 0) { 
+          if (rowIdx === 1) openBiosPopup(); 
+          else if (rowIdx === 2) openColorPopup('left');
+          else if (rowIdx === 3) openColorPopup('right');
+          else if (rowIdx === 4) openColorPopup('wave');
+          else if (rowIdx === 5) openWallpaperPopup();
+          return; 
+        }
+
+        if (colIdx === 2) { sysMsg.innerText = 'Module offline.'; sysMsg.style.opacity = 1; return; }
+        
+        var games = document.querySelectorAll('.dynamic-game');
+        if (rowIdx > 0 && rowIdx <= games.length) {
+          var gameEl = games[rowIdx - 1];
+          var title = gameEl.querySelector('.game-title').innerText;
+          var gameId = gameEl.dataset.gameId;
+          var def = SYSTEM_DEFS[gameEl.dataset.system] || SYSTEM_DEFS.gba;
+          sysMsg.innerText = 'BOOTING ' + def.short + ': ' + title; sysMsg.style.opacity = 1;
+          // buildXMB already loaded the complete ROM records. Launch directly from
+          // this trusted A-button gesture so iOS does not request another tap.
+          var cachedGame = gameCache[gameId] || memStore.games[gameId] || null;
+          if (cachedGame && cachedGame.rom) {
+            loadGame(cachedGame);
+          } else {
+            initDB().then(function(db) {
+              return db ? dbGet(db, gameId) : null;
+            }).then(function(g) {
+              if (!g) { sysMsg.innerText = 'ROM not found.'; return; }
+              gameCache[gameId] = g;
+              loadGame(g);
+            });
+          }
+        } else if (rowIdx === games.length + 1) {
+          openPopup();
+        }
+      }
+
+      function triggerB() {
+        if (popupVisible()) { XmbAudio.play('back'); closePopup(); return; }
+        if (!isOSReady) return;
+        XmbAudio.play('back');
+        var games = document.querySelectorAll('.dynamic-game');
+        if (colIdx !== 1 || rowIdx < 1 || rowIdx > games.length) return;
+        var gameEl = games[rowIdx - 1];
+        var title = gameEl.querySelector('.game-title').innerText;
+        var gameId = gameEl.dataset.gameId;
+        var sysMsg = document.getElementById('sys-msg');
+        sysMsg.innerText = 'Deleting ' + title + '...'; sysMsg.style.opacity = 1;
+        initDB().then(function(db) {
+          var p = db ? Promise.all([dbDelete(db, gameId), dbDelete(db, recoveryKey(gameId)).catch(function(){})]) : Promise.resolve(delete memStore.games[gameId]);
+          p.then(function() { return buildXMB(); }).then(function() {
+            rowIdx = Math.min(rowIdx, maxRows[1] - 1);
+            updateXMB(); sysMsg.style.opacity = 0;
+          });
+        });
+      }
+
+      // ===================================================================
+      // Install & Color Popups
+      // ===================================================================
+      var selRom = null, selCover = null, selBios = null, selSystem = null;
+
+      function closePopup() { document.getElementById('install-popup').classList.remove('visible'); }
+      var popupCloseAll = document.getElementById('popup-close-all');
+      if (popupCloseAll) popupCloseAll.addEventListener('click', closePopup);
+
+      function openPopup() {
+        XmbAudio.play('open');
+        document.getElementById('install-popup').classList.add('visible');
+        document.getElementById('popup-box-game').style.display = 'block';
+        document.getElementById('popup-box-bios').style.display = 'none';
+        document.getElementById('popup-box-color').style.display = 'none';
+        document.getElementById('popup-box-wallpaper').style.display = 'none';
+        selRom = null; selCover = null; selSystem = null;
+        document.getElementById('install-rom-upload').value = '';
+        document.getElementById('install-cover-upload').value = '';
+        document.getElementById('popup-rom-name').textContent = 'No ROM selected';
+        document.getElementById('popup-system-name').textContent = '';
+        document.getElementById('popup-cover-name').textContent = 'Optional';
+        document.getElementById('popup-install').disabled = true;
+      }
+
+      function openBiosPopup() {
+        XmbAudio.play('open');
+        document.getElementById('install-popup').classList.add('visible');
+        document.getElementById('popup-box-game').style.display = 'none';
+        document.getElementById('popup-box-color').style.display = 'none';
+        document.getElementById('popup-box-wallpaper').style.display = 'none';
+        document.getElementById('popup-box-bios').style.display = 'block';
+        selBios = null;
+        document.getElementById('install-bios-upload').value = '';
+        document.getElementById('popup-bios-name').textContent = 'No BIOS selected';
+        document.getElementById('popup-install-bios').disabled = true;
+      }
+
+      function openColorPopup(target) {
+        XmbAudio.play('open');
+        document.getElementById('install-popup').classList.add('visible');
+        document.getElementById('popup-box-game').style.display = 'none';
+        document.getElementById('popup-box-bios').style.display = 'none';
+        document.getElementById('popup-box-color').style.display = 'block';
+        document.getElementById('popup-box-wallpaper').style.display = 'none';
+        currentColorTarget = target;
+        
+        var title = document.getElementById('color-popup-title');
+        var input = document.getElementById('color-picker-input');
+        
+        if (target === 'left') {
+            title.innerText = 'L-Control Color';
+            input.value = safeGetItem('gmx_color_left', '#00c5e2');
+        } else if (target === 'right') {
+            title.innerText = 'R-Control Color';
+            input.value = safeGetItem('gmx_color_right', '#ff6658');
+        } else if (target === 'wave') {
+            title.innerText = 'Wave Color';
+            input.value = safeGetItem('gmx_color_wave', '#ffffff');
+        }
+      }
+
+      var selWallpaper = null;
+
+      function openWallpaperPopup() {
+        XmbAudio.play('open');
+        document.getElementById('install-popup').classList.add('visible');
+        document.getElementById('popup-box-game').style.display = 'none';
+        document.getElementById('popup-box-bios').style.display = 'none';
+        document.getElementById('popup-box-color').style.display = 'none';
+        document.getElementById('popup-box-wallpaper').style.display = 'block';
+        selWallpaper = null;
+        document.getElementById('wallpaper-upload').value = '';
+        document.getElementById('wallpaper-file-name').textContent = '';
+        document.getElementById('popup-apply-wallpaper').disabled = true;
+      }
+
+      document.getElementById('wallpaper-upload').addEventListener('change', function(e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f || !f.type || f.type.indexOf('image/') !== 0) {
+          selWallpaper = null;
+          document.getElementById('wallpaper-file-name').textContent = '';
+          document.getElementById('popup-apply-wallpaper').disabled = true;
+          return;
+        }
+        selWallpaper = f;
+        document.getElementById('wallpaper-file-name').textContent = f.name;
+        document.getElementById('popup-apply-wallpaper').disabled = false;
+      });
+
+      document.getElementById('popup-apply-wallpaper').addEventListener('click', function() {
+        if (!selWallpaper) return;
+        var btn = this;
+        btn.disabled = true;
+        saveWallpaper(selWallpaper).then(function() {
+          closePopup();
+          var s = document.getElementById('sys-msg');
+          s.innerText = 'Wallpaper applied!';
+          s.style.opacity = 1;
+          setTimeout(function() { s.style.opacity = 0; }, 2000);
+        }).catch(function() {
+          btn.disabled = false;
+          var s = document.getElementById('sys-msg');
+          s.innerText = 'Wallpaper could not be saved.';
+          s.style.opacity = 1;
+          setTimeout(function() { s.style.opacity = 0; }, 2500);
+        });
+      });
+
+      document.getElementById('popup-remove-wallpaper').addEventListener('click', function() {
+        removeWallpaper().then(function() {
+          closePopup();
+          var s = document.getElementById('sys-msg');
+          s.innerText = 'Wallpaper removed.';
+          s.style.opacity = 1;
+          setTimeout(function() { s.style.opacity = 0; }, 2000);
+        });
+      });
+
+      document.getElementById('popup-cancel-wallpaper').addEventListener('click', closePopup);
+
+      document.getElementById('popup-save-color').addEventListener('click', function() {
+        var hex = document.getElementById('color-picker-input').value;
+        var xmbBg = document.querySelector('.xmb-bg');
+        
+        if (currentColorTarget === 'left') {
+            applyJoyconPalette('left', hex, true);
+        } else if (currentColorTarget === 'right') {
+            applyJoyconPalette('right', hex, true);
+        } else if (currentColorTarget === 'wave') {
+            xmbBg.style.setProperty('--wave-color', hexToRgb(hex));
+            safeSetItem('gmx_color_wave', normalizeHex(hex) || hex);
+        }
+        
+        closePopup();
+        var s = document.getElementById('sys-msg');
+        s.innerText = 'Color applied!';
+        s.style.opacity = 1;
+        setTimeout(function() { s.style.opacity = 0; }, 2000);
+      });
+
+      document.getElementById('popup-cancel-color').addEventListener('click', closePopup);
+
+      var installPopup = document.getElementById('install-popup');
+      installPopup.addEventListener('click', function(e) {
+        if (e.target.closest('.popup-btn, input[type="color"]')) { haptic('tap'); XmbAudio.play('move'); }
+      });
+      installPopup.addEventListener('change', function(e) {
+        if (e.target.matches('input[type="file"], input[type="color"]')) { haptic('confirm'); XmbAudio.play('confirm'); }
+      });
+
+      // System Interactions
+      document.getElementById('install-bios-upload').addEventListener('change', function(e) {
+        var f = e.target.files[0];
+        if (f && f.name.toLowerCase().endsWith('.bin')) { selBios = f; document.getElementById('popup-bios-name').textContent = f.name; document.getElementById('popup-install-bios').disabled = false; }
+      });
+      document.getElementById('popup-install-bios').addEventListener('click', function() {
+        if (!selBios) return;
+        closePopup();
+        saveBios(selBios).then(function() {
+          var s = document.getElementById('sys-msg'); s.innerText = 'Core installed!'; s.style.opacity = 1;
+          setTimeout(function() { s.style.opacity = 0; }, 2000);
+        });
+      });
+      document.getElementById('install-rom-upload').addEventListener('change', function(e) {
+        var f = e.target.files && e.target.files[0];
+        var def = f ? detectSystem(f.name) : null;
+        selRom = def ? f : null;
+        selSystem = def;
+        document.getElementById('popup-rom-name').textContent = f ? f.name : '';
+        document.getElementById('popup-system-name').textContent = def ? ('Detected: ' + def.label) : (f ? 'Unsupported ROM type' : '');
+        document.getElementById('popup-install').disabled = !def;
+      });
+      document.getElementById('install-cover-upload').addEventListener('change', function(e) {
+        var f = e.target.files[0]; if (f) { selCover = f; document.getElementById('popup-cover-name').textContent = f.name; }
+      });
+      document.getElementById('popup-install').addEventListener('click', function() {
+        if (!selRom) return;
+        var s = document.getElementById('sys-msg'); s.innerText = 'Installing ' + (selSystem ? selSystem.short + ' · ' : '') + selRom.name + '...'; s.style.opacity = 1;
+        closePopup();
+        saveGame(selRom, selCover).then(function() {
+          s.innerText = 'Install Complete!';
+          setTimeout(function() { s.style.opacity = 0; buildXMB().then(updateXMB); }, 1500);
+        }).catch(function(err) { s.innerText = 'INSTALL FAILED: ' + (err && err.message ? err.message : 'Storage error'); s.style.opacity = 1; });
+      });
+
+      // ===================================================================
+      // Switch button → Multi-System/OS input routing
+      // ===================================================================
+      var held = {};
+      var osHeld = {};
+
+      var repeatTimers = {};
+      var NAV_REPEAT = ['btn-left','btn-right','btn-up','btn-down'];
+
+      function doNavAction(id) {
+        if (id==='btn-left') navLeft(); else if (id==='btn-right') navRight();
+        else if (id==='btn-up') navUp(); else if (id==='btn-down') navDown();
+        else if (id==='btn-a') triggerA(); else if (id==='btn-b') triggerB();
+      }
+
+      function pressButton(id) {
+        if (held[id]) return;
+        held[id] = true;
+        haptic(NAV_REPEAT.indexOf(id) > -1 ? 'tick' : 'tap');
+        if (emu.running) {
+          sendInput(id, true);
+        } else {
+          doNavAction(id);
+          if (NAV_REPEAT.indexOf(id) > -1) {
+            repeatTimers[id] = setTimeout(function rep() {
+              if (!held[id]) return;
+              haptic('tick');
+              doNavAction(id);
+              repeatTimers[id] = setTimeout(rep, 70);
+            }, 220);
+          }
+        }
+      }
+
+      function releaseButton(id) {
+        if (!held[id]) return;
+        delete held[id];
+        if (repeatTimers[id]) { clearTimeout(repeatTimers[id]); delete repeatTimers[id]; }
+        if (emu.running) sendInput(id, false);
+      }
+
+      var SWITCH_MAP = {
+        'switch-up': 'btn-up', 'switch-down': 'btn-down',
+        'switch-left': 'btn-left', 'switch-right': 'btn-right',
+        'switch-a': 'btn-a', 'switch-b': 'btn-b',
+        'switch-x': 'btn-x', 'switch-y': 'btn-y',  
+        'switch-l': 'btn-l', 'switch-r': 'btn-r',
+        'switch-minus': 'btn-select', 'switch-plus': 'btn-start'
+      };
+
+      function createIosHapticProxy(el, label) {
+        var proxy = document.createElement('input');
+        proxy.type = 'checkbox';
+        proxy.setAttribute('switch', '');
+        proxy.className = 'ios-haptic-proxy';
+        proxy.tabIndex = -1;
+        proxy.setAttribute('aria-label', label || 'Control');
+        proxy.autocomplete = 'off';
+        proxy.checked = false;
+        proxy.style.webkitTapHighlightColor = 'transparent';
+        proxy.addEventListener('change', function() {
+          // Return to a known state without generating a second haptic.
+          requestAnimationFrame(function(){ proxy.checked = false; });
+        });
+        var parent = el.parentElement || el;
+        parent.appendChild(proxy);
+        function syncProxy() {
+          if (!el.isConnected || !proxy.isConnected) return;
+          proxy.style.setProperty('inset', 'auto', 'important');
+          proxy.style.setProperty('left', el.offsetLeft + 'px', 'important');
+          proxy.style.setProperty('top', el.offsetTop + 'px', 'important');
+          proxy.style.setProperty('width', el.offsetWidth + 'px', 'important');
+          proxy.style.setProperty('height', el.offsetHeight + 'px', 'important');
+          proxy.style.setProperty('min-width', el.offsetWidth + 'px', 'important');
+          proxy.style.setProperty('min-height', el.offsetHeight + 'px', 'important');
+        }
+        requestAnimationFrame(syncProxy);
+        setTimeout(syncProxy, 50);
+        window.addEventListener('resize', syncProxy, { passive: true });
+        return proxy;
+      }
+
+      function bindSwitchButton(switchId) {
+        var el = document.getElementById(switchId);
+        var gameId = SWITCH_MAP[switchId];
+        if (!el || !gameId) return;
+        var inputTarget = createIosHapticProxy(el, gameId.replace('btn-', '').toUpperCase());
+        var pointerId = null;
+
+        function down(e) {
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          e.preventDefault(); e.stopPropagation();
+          if (emu.running) primeGameAudio(); else XmbAudio.ensure();
+          pointerId = e.pointerId;
+          try { inputTarget.setPointerCapture(e.pointerId); } catch(ignore) {}
+          el.classList.add('active');
+          pressButton(gameId);
+        }
+        function up(e) {
+          if (pointerId !== null && e.pointerId !== undefined && e.pointerId !== pointerId) return;
+          e.preventDefault(); e.stopPropagation();
+          pointerId = null;
+          el.classList.remove('active');
+          releaseButton(gameId);
+        }
+
+        inputTarget.addEventListener('pointerdown', down, { passive: false });
+        inputTarget.addEventListener('pointerup', up, { passive: false });
+        inputTarget.addEventListener('pointercancel', up, { passive: false });
+        inputTarget.addEventListener('lostpointercapture', up, { passive: false });
+        inputTarget.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+      }
+
+      Object.keys(SWITCH_MAP).forEach(bindSwitchButton);
+
+      // ===================================================================
+      // Keyboard Events 
+      // ===================================================================
+      window.addEventListener('keydown', function(e) {
+        if (popupVisible()) return;
+        
+        var code = e.keyCode || e.which;
+        if ([37, 38, 39, 40, 32].indexOf(code) > -1) e.preventDefault();
+
+        var gameBtn = KEYCODE_MAP[code]; 
+        if (gameBtn) {
+          if (emu.running) {
+            if (!held[gameBtn]) { held[gameBtn] = true; haptic(NAV_REPEAT.indexOf(gameBtn) > -1 ? 'tick' : 'tap'); }
+            sendInput(gameBtn, true);
+          } else {
+            if (!osHeld[gameBtn]) { osHeld[gameBtn] = true; pressButton(gameBtn); }
+          }
+          return;
+        }
+
+        var ctrlBtn = CONTROL_MAP[code];
+        if (ctrlBtn) {
+          if (ctrlBtn === 'vol-up') changeVolume(0.1);
+          else if (ctrlBtn === 'vol-down') changeVolume(-0.1);
+          else if (ctrlBtn === 'speed-up') { haptic('tick'); setSpeedIdx(speedIdx + 1); }
+          else if (ctrlBtn === 'speed-down') { haptic('tick'); setSpeedIdx(speedIdx - 1); }
+          else if (ctrlBtn === 'speed-reset') { haptic('confirm'); setSpeedIdx(2); }
+          else if (ctrlBtn === 'fullscreen') {
+            haptic('confirm');
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(err => {});
+            else document.exitFullscreen().catch(err => {});
+          }
+        }
+      });
+
+      window.addEventListener('keyup', function(e) {
+        var code = e.keyCode || e.which;
+        var gameBtn = KEYCODE_MAP[code]; 
+        if (!gameBtn) return;
+        
+        delete osHeld[gameBtn];
+        releaseButton(gameBtn);
+      });
+
+      // ===================================================================
+      // Power button — Switch home button triggers CSD OS boot
+      // ===================================================================
+      var homeBtn = document.getElementById('switch-home');
+      var screen = document.getElementById('screen');
+      var _powerTouched = false;
+
+      function togglePower(e, silent) {
+        if (e) e.preventDefault();
+        if (!silent) haptic('confirm');
+        if (emu.running) {
+          if (emu.returningHome) return;
+          emu.returningHome = true;
+          setRecoveryOverlay(true, 'RETURNING HOME', 'Closing the emulator core…');
+          var completed = false;
+          var finish = function() {
+            if (completed) return; completed = true;
+            returnToXmbWithoutReload().finally(function(){ emu.returningHome = false; });
+          };
+          if (emu.system === 'n64' || emu.system === 'nds') {
+            finish();
+          } else {
+            saveRecoveryState('home').then(finish).catch(finish);
+            setTimeout(finish, 900);
+          }
+          return;
+        }
+        isPoweredOn = !isPoweredOn; isOSReady = false;
+        bootTimers.forEach(clearTimeout); bootTimers = [];
+
+        homeBtn.classList.add('active');
+        setTimeout(function() { homeBtn.classList.remove('active'); }, 150);
+
+        if (isPoweredOn) {
+          screen.classList.remove('power-off');
+          
+          screen.classList.remove('is-booting');
+          void screen.offsetWidth; 
+          screen.classList.add('is-booting');
+          
+          if (!silent) playBootSound();
+          
+          bootTimers.push(setTimeout(function() {
+            buildXMB().then(function() {
+              screen.classList.remove('is-booting');
+              screen.classList.add('os-ready');
+              isOSReady = true; colIdx = 1; rowIdx = 0; updateXMB();
+            });
+          }, 2850));
+        } else {
+          screen.classList.add('power-off');
+          screen.className = 'screen power-off'; 
+          document.getElementById('sys-msg').style.opacity = 0;
+          stopEmu(); closePopup();
+          stopBootSound();
+        }
+      }
+
+      var returningFromGame = false;
+      try { returningFromGame = sessionStorage.getItem('csd_return_xmb') === '1'; sessionStorage.removeItem('csd_return_xmb'); } catch(ignore) {}
+      if (returningFromGame) {
+        isPoweredOn = true;
+        screen.className = 'screen os-ready';
+        buildXMB().then(function() {
+          isOSReady = true; colIdx = 1; rowIdx = 0; updateXMB();
+        });
+      } else {
+        screen.classList.add('power-off');
+        // A web-app refresh should return to a usable XMB automatically.
+        setTimeout(function() {
+          if (!isPoweredOn && !emu.running) togglePower(null, true);
+        }, 120);
+      }
+
+      var homePointer = null;
+      var homeInput = createIosHapticProxy(homeBtn, 'HOME');
+      homeInput.addEventListener('pointerdown', function(e) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.stopPropagation();
+        XmbAudio.ensure(); primeGameAudio();
+        homePointer = e.pointerId;
+        try { homeInput.setPointerCapture(e.pointerId); } catch(ignore) {}
+        homeBtn.classList.add('active');
+      }, { passive:true });
+      function finishHome(e) {
+        if (homePointer !== null && e.pointerId !== undefined && e.pointerId !== homePointer) return;
+        e.stopPropagation();
+        var shouldToggle = homePointer !== null;
+        homePointer = null;
+        homeBtn.classList.remove('active');
+        if (shouldToggle) togglePower(null, false);
+      }
+      homeInput.addEventListener('pointerup', finishHome, { passive:true });
+      homeInput.addEventListener('pointercancel', finishHome, { passive:true });
+      homeInput.addEventListener('lostpointercapture', function(e) {
+        if (homePointer !== null) finishHome(e);
+      }, { passive:true });
+      homeInput.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+      // ===================================================================
+      // AR / Camera Passthrough (Capture Button)
+      // ===================================================================
+      const captureBtn = document.querySelector('.menu');
+      const cameraBg = document.getElementById('camera-bg');
+      const camSysMsg = document.getElementById('sys-msg');
+      let cameraStream = null;
+      let isCameraActive = false;
+
+      captureBtn.addEventListener('pointerup', async (e) => {
+        e.preventDefault();
+        haptic('confirm');
+        
+        if (isCameraActive) {
+          if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+          }
+          cameraBg.srcObject = null;
+          document.body.classList.remove('camera-active');
+          isCameraActive = false;
+        } else {
+          try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ 
+              video: { 
+                facingMode: 'environment',
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                frameRate: { ideal: 60 } 
+              },
+              audio: false
+            });
+            
+            cameraBg.srcObject = cameraStream;
+            document.body.classList.add('camera-active');
+            isCameraActive = true;
+            
+          } catch (err) {
+            console.error("Camera access failed:", err);
+            if (camSysMsg) {
+              camSysMsg.innerText = 'CAMERA ACCESS DENIED';
+              camSysMsg.style.opacity = 1;
+              setTimeout(() => camSysMsg.style.opacity = 0, 3000);
+            }
+          }
+        }
+      });
+
+      // ===================================================================
+      // Clock + Scale
+      // ===================================================================
+      function updateClock() {
+        if (document.body.classList.contains('game-active')) return;
+        var now = new Date(), h = now.getHours(), m = now.getMinutes().toString().padStart(2,'0');
+        var ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+        var c = document.getElementById('xmb-clock'); if (c) c.innerText = (now.getMonth()+1) + '/' + now.getDate() + ' ' + h + ':' + m + ap;
+      }
+      updateClock(); setInterval(updateClock, 30000);
+
+      function applyOsScale() {
+        var sw = document.querySelector('.screen');
+        if (!sw) return;
+        var rect = sw.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+        var screenAspect = rect.width / rect.height;
+        var osBaseHeight = 294;
+        var osBaseWidth = Math.round(osBaseHeight * screenAspect);
+        var s = rect.height / osBaseHeight;
+        var wrapper = document.getElementById('os-scale-wrapper');
+        if (wrapper) {
+          wrapper.style.width = osBaseWidth + 'px';
+          wrapper.style.height = osBaseHeight + 'px';
+          wrapper.style.left = '0px';
+          wrapper.style.top = '0px';
+          wrapper.style.transform = 'scale(' + s + ')';
+        }
+      }
+
+      var shellArticle = document.querySelector('article');
+      var shellOrientation = window.matchMedia('(orientation: landscape)').matches ? 'landscape' : 'portrait';
+      var joyconDockTimer = 0;
+      var orientationReplayTimer = 0;
+
+      function finishJoyconDocking() {
+        if (!shellArticle) return;
+        shellArticle.classList.remove('joycons-arriving');
+        joyconDockTimer = 0;
+      }
+
+      function replayJoyconDocking() {
+        if (!shellArticle || !window.matchMedia('(orientation: landscape)').matches) return;
+        clearTimeout(joyconDockTimer);
+        shellArticle.classList.remove('joycons-arriving');
+        // Force a style flush so the same keyframes can restart reliably on iOS Safari.
+        void shellArticle.offsetWidth;
+        shellArticle.classList.add('joycons-arriving');
+        joyconDockTimer = window.setTimeout(finishJoyconDocking, 980);
+      }
+
+      function handleShellOrientation() {
+        var nextOrientation = window.matchMedia('(orientation: landscape)').matches ? 'landscape' : 'portrait';
+        if (nextOrientation === shellOrientation) return;
+        shellOrientation = nextOrientation;
+        clearTimeout(orientationReplayTimer);
+
+        if (nextOrientation === 'portrait') {
+          clearTimeout(joyconDockTimer);
+          if (shellArticle) shellArticle.classList.remove('joycons-arriving');
+          return;
+        }
+
+        // Let Safari finish its viewport/safe-area update before docking the Joy-Cons.
+        orientationReplayTimer = window.setTimeout(function() {
+          applyOsScale();
+          replayJoyconDocking();
+        }, 180);
+      }
+
+      // The HTML starts with this class, giving the first landscape view the same entrance.
+      joyconDockTimer = window.setTimeout(finishJoyconDocking, 980);
+
+      window.addEventListener('resize', function() {
+        applyOsScale();
+        handleShellOrientation();
+      });
+      window.addEventListener('orientationchange', function() {
+        window.setTimeout(function() {
+          applyOsScale();
+          handleShellOrientation();
+        }, 120);
+      });
+      if (window.screen && window.screen.orientation && window.screen.orientation.addEventListener) {
+        window.screen.orientation.addEventListener('change', handleShellOrientation);
+      }
+      window.addEventListener('pageshow', function(event) {
+        if (event.persisted) window.setTimeout(replayJoyconDocking, 80);
+      });
+      setTimeout(applyOsScale, 100);
+      setTimeout(applyOsScale, 500);
+
+      var SPEED_STEPS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0];
+      var speedIdx = 2;
+
+      function setSpeedIdx(idx) {
+        speedIdx = Math.max(0, Math.min(SPEED_STEPS.length - 1, idx));
+        emuSpeed = SPEED_STEPS[speedIdx];
+        applyEmuSpeed();
+      }
+
+      window.addEventListener('error', function(event) {
+        if (emu && emu.running) return;
+        var msg = document.getElementById('sys-msg');
+        var scr = document.getElementById('screen');
+        if (scr) { scr.classList.remove('power-off', 'is-booting'); scr.classList.add('os-ready'); }
+        if (msg) {
+          msg.textContent = 'STARTUP ERROR: ' + String((event && event.message) || 'Unknown error');
+          msg.style.opacity = 1;
+        }
+      });
+
+    });
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // Never reload the shell automatically. A fresh worker controls the next
+        // navigation, while the current XMB/game session remains untouched.
+        if (document.body.classList.contains('game-active')) return;
+        const msg = document.getElementById('sys-msg');
+        if (msg) {
+          msg.textContent = 'OFFLINE UPDATE READY · APPLIES NEXT LAUNCH';
+          msg.style.opacity = 1;
+          setTimeout(() => { msg.style.opacity = 0; }, 2200);
+        }
+      });
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js?v=14.2.1', { scope: './', updateViaCache: 'none' })
+          .then((registration) => {
+            console.log('[CSD SW] Registration successful with scope: ', registration.scope);
+          })
+          .catch((error) => {
+            console.log('[CSD SW] Registration failed: ', error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>

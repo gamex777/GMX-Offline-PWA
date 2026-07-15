@@ -1,0 +1,7 @@
+This package includes EmulatorJS 4.2.3 and selected libretro WebAssembly cores.
+Project: https://github.com/EmulatorJS/EmulatorJS
+Cores bundled: fceumm, snes9x, gambatte, mgba, parallel_n64,
+desmume2015, genesis_plus_gx.
+
+No BIOS files or commercial game ROMs are included. Use only ROMs and BIOS files
+that you are legally entitled to use.
