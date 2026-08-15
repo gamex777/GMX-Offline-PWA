@@ -23,10 +23,10 @@ strong{display:block;font-size:22px;margin-bottom:8px}.small{color:#aaa;font-siz
       const keys=await caches.keys();
       await Promise.all(keys.map(k=>caches.delete(k)));
     }
-    status.textContent='Cache cleared. Loading Build 15.2…';
+    status.textContent='Cache cleared. Loading Build 15.3…';
   }catch(e){
     status.textContent='Continuing with the update…';
   }
-  setTimeout(()=>location.replace('./index.html?build=15.2.0&fresh='+Date.now()),500);
+  setTimeout(()=>location.replace('./index.html?build=15.3.0&fresh='+Date.now()),500);
 })();
 </script></body></html>

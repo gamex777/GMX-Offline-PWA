@@ -1,6 +1,14 @@
-CSD Offline PWA — Build 15.2
+CSD Offline PWA — Build 15.3
 
-Mario Kart 64 full-speed repair
+Galaxy A16 Mario Kart 64 turbo repair
+- Replaces the heavier Mupen test from Build 15.2 with EmulatorJS's smaller Parallel N64 browser core.
+- Forces the modern WebGL2 package; Build 15.1 had accidentally selected the legacy WebGL1 package.
+- Forces the browser-compiled Glide64 + HLE path at native 320x240, low graphics accuracy, nearest filtering, and no duplicate frame uploads.
+- Removes Parallel N64's additional 15% analogue dead zone so the shell's responsive 7% dead zone is the only one applied.
+- Coalesces redundant touch-axis events to one current joystick vector per display frame while keeping initial contact, release, and every button press immediate.
+- Keeps the stock 2048-sample N64 core buffer and 64 ms frontend audio buffer for stability.
+
+Build 15.2 Mupen attempt (superseded by the turbo profile above)
 - Replaces Parallel N64 with the official bundled Mupen64Plus-Next core, matching the N64 core used by earlier CSD source variants.
 - Selects Mupen's modern WebGL2 package on supported devices instead of the legacy WebGL1 package that was slowing both gameplay and audio.
 - Runs N64 at native 320x240 with GLideN64 and the HLE RSP performance path.
@@ -13,7 +21,7 @@ A16 control-latency repair
 - Uses the direct libretro input bridge for normal gameplay controls and avoids the extra EmulatorJS menu/netplay routing layer.
 - Keeps Android gameplay haptics but shortens phone vibration to a maximum of 6 ms and defers it until after the input call.
 - Promotes only the two joystick knobs to compositor layers and removes active-button filter repaints in the balanced Android profile.
-- Uses the modern WebGL2 Mupen N64 renderer on the balanced A16/Android profile.
+- Uses the modern WebGL2 Parallel N64 renderer on the balanced A16/Android profile.
 - Restores the stock 64 ms audio buffer so sound response does not add another 32 ms of perceived control delay.
 
 Galaxy A16 5G / Android performance repair
@@ -43,8 +51,8 @@ Controls and stability
 - Retains the corrected N64 mapping, proportional left stick, C-button right stick, pointer capture, pressed states, haptics, same-document HOME transition, service-worker no-reload behavior, and WebGL context-loss recovery.
 
 Deployment
-1. Replace every hosted file with the complete Build 15.2 folder.
-2. Confirm sw.js starts with csd-offline-v15.2.0.
+1. Replace every hosted file with the complete Build 15.3 folder.
+2. Confirm sw.js starts with csd-offline-v15.3.0.
 3. Wait for GitHub Pages deployment.
 4. Open reset.html once. ROMs stored in IndexedDB are preserved.
 5. Delete and re-add the iPhone Home Screen icon.

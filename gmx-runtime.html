@@ -37,7 +37,7 @@
 
   var SYSTEMS={
     nes:{core:'fceumm',scheme:'nes'}, snes:{core:'snes9x',scheme:'snes'},
-    n64:{core:'mupen64plus_next',scheme:'n64'}, gb:{core:'gambatte',scheme:'gb'},
+    n64:{core:'parallel_n64',scheme:'n64'}, gb:{core:'gambatte',scheme:'gb'},
     gbc:{core:'gambatte',scheme:'gb'}, gba:{core:'mgba',scheme:'gba'},
     nds:{core:'desmume2015',scheme:'nds'}, segaMD:{core:'genesis_plus_gx',scheme:'segaMD'}
   };
@@ -138,7 +138,7 @@
     if(!sys)throw new Error('Unsupported system: '+(game.system||requestedSystem||'unknown'));
     var core=(game.core&&String(game.core))||requestedCore||sys.core;
     // Only permit cores actually bundled with this offline PWA.
-    var allowed=['fceumm','snes9x','mupen64plus_next','gambatte','mgba','desmume2015','genesis_plus_gx'];
+    var allowed=['fceumm','snes9x','parallel_n64','gambatte','mgba','desmume2015','genesis_plus_gx'];
     if(allowed.indexOf(core)===-1)core=sys.core;
     // Pass ROM bytes directly to EmulatorJS. Blob URLs were responsible for
     // the generic "Network Error" on some hosted builds and iOS web apps.
@@ -181,22 +181,22 @@
     window.EJS_language='en-US';
     window.EJS_disableLocalStorage=true;
     window.EJS_DEBUG_XX=false;
-    window.GMX_RUNTIME_VERSION='15.2.0';
+    window.GMX_RUNTIME_VERSION='15.3.0';
     window.EJS_defaultOptions={'shader':'disabled'};
     if(sys.scheme==='n64'){
       Object.assign(window.EJS_defaultOptions,{
         webgl2Enabled:'enabled',
-        'mupen64plus-rdp-plugin':'gliden64',
-        'mupen64plus-rsp-plugin':'hle',
-        'mupen64plus-43screensize':'320x240',
-        'mupen64plus-EnableNativeResFactor':'0',
-        'mupen64plus-ThreadedRenderer':'False',
-        'mupen64plus-HybridFilter':'False',
-        'mupen64plus-MultiSampling':'0',
-        'mupen64plus-FXAA':'0',
-        'mupen64plus-FrameDuping':'False',
-        'mupen64plus-Framerate':'Original',
-        'mupen64plus-EnableTextureCache':'False'
+        'parallel-n64-gfxplugin':'glide64',
+        'parallel-n64-rspplugin':'hle',
+        'parallel-n64-screensize':'320x240',
+        'parallel-n64-gfxplugin-accuracy':'low',
+        'parallel-n64-filtering':'nearest',
+        'parallel-n64-bufferswap':'disabled',
+        'parallel-n64-framerate':'original',
+        'parallel-n64-audio-buffer-size':'2048',
+        'parallel-n64-astick-deadzone':'0',
+        'parallel-n64-astick-sensitivity':'100',
+        'parallel-n64-send_allist_to_hle_rsp':'disabled'
       });
     }
     window.EJS_hideSettings=['shader','fps','slowMotion','fastForward','virtual-gamepad'];
