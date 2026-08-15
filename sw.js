@@ -1,4 +1,4 @@
-const CACHE_NAME = 'csd-offline-v15.1.0';
+const CACHE_NAME = 'csd-offline-v15.2.0';
 const PRECACHE = [
   './',
   './index.html',
@@ -32,6 +32,7 @@ const PRECACHE = [
   './data/cores/reports/gambatte.json',
   './data/cores/reports/genesis_plus_gx.json',
   './data/cores/reports/mgba.json',
+  './data/cores/reports/mupen64plus_next.json',
   './data/cores/reports/parallel_n64.json',
   './data/cores/reports/snes9x.json',
   './data/cores/desmume2015-legacy-wasm.data',
@@ -44,6 +45,8 @@ const PRECACHE = [
   './data/cores/genesis_plus_gx-wasm.data',
   './data/cores/mgba-legacy-wasm.data',
   './data/cores/mgba-wasm.data',
+  './data/cores/mupen64plus_next-legacy-wasm.data',
+  './data/cores/mupen64plus_next-wasm.data',
   './data/cores/parallel_n64-legacy-wasm.data',
   './data/cores/parallel_n64-wasm.data',
   './data/cores/snes9x-legacy-wasm.data',

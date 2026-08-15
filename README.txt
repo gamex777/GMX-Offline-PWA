@@ -1,4 +1,11 @@
-CSD Offline PWA — Build 15.1
+CSD Offline PWA — Build 15.2
+
+Mario Kart 64 full-speed repair
+- Replaces Parallel N64 with the official bundled Mupen64Plus-Next core, matching the N64 core used by earlier CSD source variants.
+- Selects Mupen's modern WebGL2 package on supported devices instead of the legacy WebGL1 package that was slowing both gameplay and audio.
+- Runs N64 at native 320x240 with GLideN64 and the HLE RSP performance path.
+- Disables the hybrid scaling filter, anti-aliasing, texture-cache disk work, duplicate-frame uploads, and the threaded renderer that trades input latency for throughput.
+- Keeps original game timing and the stock 64 ms audio buffer; audio no longer needs to conceal an under-speed core.
 
 A16 control-latency repair
 - Reduces the physical joystick dead zone from 33% of its travel to approximately 7%, then rescales the remaining travel to the full analogue range.
@@ -6,7 +13,7 @@ A16 control-latency repair
 - Uses the direct libretro input bridge for normal gameplay controls and avoids the extra EmulatorJS menu/netplay routing layer.
 - Keeps Android gameplay haptics but shortens phone vibration to a maximum of 6 ms and defers it until after the input call.
 - Promotes only the two joystick knobs to compositor layers and removes active-button filter repaints in the balanced Android profile.
-- Uses the lightweight legacy N64 renderer on the balanced A16/Android profile while keeping the modern core path for other systems.
+- Uses the modern WebGL2 Mupen N64 renderer on the balanced A16/Android profile.
 - Restores the stock 64 ms audio buffer so sound response does not add another 32 ms of perceived control delay.
 
 Galaxy A16 5G / Android performance repair
@@ -36,8 +43,8 @@ Controls and stability
 - Retains the corrected N64 mapping, proportional left stick, C-button right stick, pointer capture, pressed states, haptics, same-document HOME transition, service-worker no-reload behavior, and WebGL context-loss recovery.
 
 Deployment
-1. Replace every hosted file with the complete Build 15.1 folder.
-2. Confirm sw.js starts with csd-offline-v15.1.0.
+1. Replace every hosted file with the complete Build 15.2 folder.
+2. Confirm sw.js starts with csd-offline-v15.2.0.
 3. Wait for GitHub Pages deployment.
 4. Open reset.html once. ROMs stored in IndexedDB are preserved.
 5. Delete and re-add the iPhone Home Screen icon.

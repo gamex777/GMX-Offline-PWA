@@ -2355,7 +2355,7 @@
                     <svg class="xmb-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                     <span>About</span>
                   </div>
-                  <div class="xmb-sub">Build 15.1.0 · EmulatorJS 4.2</div>
+                  <div class="xmb-sub">Build 15.2.0 · EmulatorJS 4.2</div>
                 </div>
               </div>
               <div id="xmb-help">
@@ -2936,7 +2936,7 @@
       var SYSTEM_DEFS = {
         nes:    { key:'nes',    label:'Nintendo Entertainment System', short:'NES', core:'fceumm', extensions:['nes'] },
         snes:   { key:'snes',   label:'Super Nintendo Entertainment System', short:'SNES', core:'snes9x', extensions:['sfc','smc','swc'] },
-        n64:    { key:'n64',    label:'Nintendo 64', short:'N64', core:'parallel_n64', extensions:['n64','z64','v64'] },
+        n64:    { key:'n64',    label:'Nintendo 64', short:'N64', core:'mupen64plus_next', extensions:['n64','z64','v64'] },
         gb:     { key:'gb',     label:'Game Boy', short:'GB', core:'gambatte', extensions:['gb'] },
         gbc:    { key:'gbc',    label:'Game Boy Color', short:'GBC', core:'gambatte', extensions:['gbc'] },
         gba:    { key:'gba',    label:'Game Boy Advance', short:'GBA', core:'mgba', extensions:['gba'] },
@@ -3450,15 +3450,32 @@
           window.EJS_audioLatency = (window.CSD_PERFORMANCE_PROFILE && window.CSD_PERFORMANCE_PROFILE.audioLatency) || 64;
           window.EJS_lightweightUI = true;
           window.EJS_leanRuntime = true;
-          window.EJS_forceLegacyCores = !!(window.CSD_PERFORMANCE_PROFILE &&
-            window.CSD_PERFORMANCE_PROFILE.name === 'balanced' && def.key === 'n64');
+          // Mupen's modern package uses WebGL2 by default and is substantially
+          // faster than the legacy N64 path on Galaxy A16-class Android GPUs.
+          window.EJS_forceLegacyCores = false;
           window.EJS_disableDatabases = IS_IOS;
           window.EJS_disableAutoLang = true;
           window.EJS_language = 'en-US';
           window.EJS_disableLocalStorage = true;
           window.EJS_DEBUG_XX = false;
-          window.CSD_RUNTIME_VERSION = '15.1.0';
+          window.CSD_RUNTIME_VERSION = '15.2.0';
           window.EJS_defaultOptions = { shader:'disabled' };
+          if (def.key === 'n64') {
+            Object.assign(window.EJS_defaultOptions, {
+              webgl2Enabled:'enabled',
+              'mupen64plus-rdp-plugin':'gliden64',
+              'mupen64plus-rsp-plugin':'hle',
+              'mupen64plus-43screensize':'320x240',
+              'mupen64plus-EnableNativeResFactor':'0',
+              'mupen64plus-ThreadedRenderer':'False',
+              'mupen64plus-HybridFilter':'False',
+              'mupen64plus-MultiSampling':'0',
+              'mupen64plus-FXAA':'0',
+              'mupen64plus-FrameDuping':'False',
+              'mupen64plus-Framerate':'Original',
+              'mupen64plus-EnableTextureCache':'False'
+            });
+          }
           window.EJS_hideSettings = ['shader','fps','slowMotion','fastForward','virtual-gamepad'];
           window.EJS_Buttons = {
             playPause:false,play:false,pause:false,restart:false,mute:false,unmute:false,
@@ -3507,7 +3524,7 @@
 
           var script = document.createElement('script');
           script.id = 'csd-emulatorjs-loader';
-          script.src = './data/loader.js?v=15.1.0';
+          script.src = './data/loader.js?v=15.2.0';
           script.onerror = function() {
             restoreAudioContextBridge();
             renderError('CORE BOOT FAILED', 'The local EmulatorJS runtime is missing. Upload the complete Build 15 folder.');
@@ -4596,7 +4613,7 @@
         }
       });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=15.1.0', { scope: './', updateViaCache: 'none' })
+        navigator.serviceWorker.register('./sw.js?v=15.2.0', { scope: './', updateViaCache: 'none' })
           .then((registration) => {
             console.log('[CSD SW] Registration successful with scope: ', registration.scope);
           })

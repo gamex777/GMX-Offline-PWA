@@ -16,7 +16,7 @@
 <body>
 <main>
   <h1>CSD Offline PWA Diagnostics</h1>
-  <p>Build <strong>15.1.0</strong>. This page verifies the local runtime, decompressor, cores, storage, and service worker.</p>
+  <p>Build <strong>15.2.0</strong>. This page verifies the local runtime, decompressor, cores, storage, and service worker.</p>
   <div class="card">
     <button id="run">Run checks</button>
     <a href="./reset.html">Reset app cache</a>
@@ -32,7 +32,7 @@
   const required = [
     './index.html','./data/loader.js','./data/src/emulator.js','./data/src/GameManager.js','./data/src/compression.js',
     './data/compression/extract7z.js','./data/compression/extractzip.js','./data/compression/libunrar.js','./data/compression/libunrar.wasm',
-    './data/cores/fceumm-wasm.data','./data/cores/snes9x-wasm.data','./data/cores/parallel_n64-wasm.data',
+    './data/cores/fceumm-wasm.data','./data/cores/snes9x-wasm.data','./data/cores/mupen64plus_next-wasm.data',
     './data/cores/gambatte-wasm.data','./data/cores/mgba-wasm.data','./data/cores/desmume2015-wasm.data','./data/cores/genesis_plus_gx-wasm.data'
   ];
   const esc = text => String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
