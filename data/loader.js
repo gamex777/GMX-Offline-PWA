@@ -2,7 +2,7 @@
     const scripts = [
         "emulator.js",
         "nipplejs.js",
-        "shaders.js",
+        ...(window.EJS_leanRuntime ? [] : ["shaders.js"]),
         "storage.js",
         "gamepad.js",
         "GameManager.js",
@@ -127,6 +127,8 @@
     config.backgroundColor = window.EJS_backgroundColor;
     config.controlScheme = window.EJS_controlScheme;
     config.threads = window.EJS_threads;
+    config.audioLatency = window.EJS_audioLatency;
+    config.lightweightUI = window.EJS_lightweightUI === true;
     config.disableCue = window.EJS_disableCue;
     config.startBtnName = window.EJS_startButtonName;
     config.softLoad = window.EJS_softLoad;

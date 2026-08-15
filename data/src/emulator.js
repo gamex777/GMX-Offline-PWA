@@ -93,6 +93,10 @@ class EmulatorJS {
     destroy() {
         if (this._csdDestroyed) return;
         this._csdDestroyed = true;
+        try {
+            if (this.gamepad && typeof this.gamepad.terminate === "function") this.gamepad.terminate();
+            this.gamepad = null;
+        } catch(e) {}
         if (Array.isArray(this._csdListeners)) {
             this._csdListeners.forEach((data) => {
                 try { data.elem.removeEventListener(data.listener, data.cb); } catch(e) {}
@@ -4089,7 +4093,7 @@ class EmulatorJS {
         this.virtualGamepad.style.display = "none";
     }
     handleResize() {
-        if (this.virtualGamepad) {
+        if (this.virtualGamepad && !this.config.lightweightUI) {
             if (this.virtualGamepad.style.display === "none") {
                 this.virtualGamepad.style.opacity = 0;
                 this.virtualGamepad.style.display = "";

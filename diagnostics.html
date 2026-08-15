@@ -16,7 +16,7 @@
 <body>
 <main>
   <h1>CSD Offline PWA Diagnostics</h1>
-  <p>Build <strong>14.0.0</strong>. This page verifies the local runtime, decompressor, cores, storage, and service worker.</p>
+  <p>Build <strong>15.0.0</strong>. This page verifies the local runtime, decompressor, cores, storage, and service worker.</p>
   <div class="card">
     <button id="run">Run checks</button>
     <a href="./reset.html">Reset app cache</a>
@@ -58,7 +58,7 @@
       <p>Service workers: <strong class="${sw?'ok':'bad'}">${sw?'SUPPORTED':'UNSUPPORTED'}</strong></p>
       <p>Page controlled by service worker: <strong class="${controlled?'ok':'wait'}">${controlled?'YES':'NOT YET'}</strong></p>
       <p>Web vibration API: <strong class="${typeof navigator.vibrate==='function'?'ok':'wait'}">${typeof navigator.vibrate==='function'?'AVAILABLE':'NOT EXPOSED (EXPECTED ON iOS)'}</strong></p>
-      <p>Safari switch haptics: <strong class="wait">DEVICE TEST REQUIRED</strong> — Build 14 overlays native switch controls on discrete buttons.</p>
+      <p>Safari switch haptics: <strong class="wait">DEVICE TEST REQUIRED</strong> — Build 15 keeps native switch overlays on iOS and removes them from Android.</p>
       <p>Audio session API: <strong class="${navigator.audioSession?'ok':'wait'}">${navigator.audioSession?'AVAILABLE':'NOT EXPOSED'}</strong></p>
       <p>Logical CPU cores: <strong>${navigator.hardwareConcurrency||'unknown'}</strong></p>`;
     let failures=0;

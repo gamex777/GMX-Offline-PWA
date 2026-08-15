@@ -1,4 +1,15 @@
-CSD Offline PWA — Build 14.2
+CSD Offline PWA — Build 15.0
+
+Galaxy A16 5G / Android performance repair
+- Replaces EmulatorJS's permanent 10 ms external-gamepad polling with adaptive polling: 16 ms only while a controller is connected, 250 ms while idle, and 500 ms in the background.
+- Terminates the gamepad loop when returning HOME, preventing one additional polling loop from accumulating after every game launch.
+- Uses direct shell controls on Android instead of creating seventeen transparent iOS-native switch overlays.
+- Adds a balanced Android compositor profile that keeps the PSP/XMB design but freezes perpetual star/wave effects and removes the heaviest blur/blend layers.
+- Uses a 96 ms Android audio buffer to reduce underruns while retaining native emulation speed, VSync, and disabled smoothing/shaders.
+- Suppresses duplicate analogue input calls and removes the unused 140 KB shader catalog from the launch path.
+- Reduces the optional camera background from 1080p60 to 720p30 on Android and stops it before gameplay as before.
+
+Preserved from Build 14.2.1
 
 Joy-Con orientation docking + N64 performance repair
 - Adds a replayable shell animation: the left Joy-Con docks from above and the right Joy-Con docks from below whenever the device returns from portrait to landscape.
@@ -16,13 +27,13 @@ Controls and stability
 - Retains the corrected N64 mapping, proportional left stick, C-button right stick, pointer capture, pressed states, haptics, same-document HOME transition, service-worker no-reload behavior, and WebGL context-loss recovery.
 
 Deployment
-1. Replace every hosted file with the complete Build 14.2 folder.
-2. Confirm sw.js starts with csd-offline-v14.2.0.
+1. Replace every hosted file with the complete Build 15.0 folder.
+2. Confirm sw.js starts with csd-offline-v15.0.0.
 3. Wait for GitHub Pages deployment.
 4. Open reset.html once. ROMs stored in IndexedDB are preserved.
 5. Delete and re-add the iPhone Home Screen icon.
 
 
-BUILD 14.2.1 CHANGES
+BUILD 14.2.1 CHANGES (included)
 - Game launches now show the GAMEX COMPUTER ENTERTAINMENT -> CSD 1 boot animation instead of core initialization text.
 - The XMB sys-msg toast overlay is disabled, removing all 18 UI toast messages.

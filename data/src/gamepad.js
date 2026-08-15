@@ -24,17 +24,41 @@ class GamepadHandler {
         this.gamepads = [];
         this.listeners = {};
         this.timeout = null;
+        this.terminated = false;
+        this.onGamepadConnectionChange = this.wake.bind(this);
+        this.onVisibilityChange = this.wake.bind(this);
+        window.addEventListener('gamepadconnected', this.onGamepadConnectionChange);
+        window.addEventListener('gamepaddisconnected', this.onGamepadConnectionChange);
+        document.addEventListener('visibilitychange', this.onVisibilityChange);
         this.loop();
     }
     terminate() {
+        this.terminated = true;
         window.clearTimeout(this.timeout);
+        this.timeout = null;
+        window.removeEventListener('gamepadconnected', this.onGamepadConnectionChange);
+        window.removeEventListener('gamepaddisconnected', this.onGamepadConnectionChange);
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+        this.listeners = {};
+        this.gamepads = [];
+    }
+    wake() {
+        if (this.terminated) return;
+        window.clearTimeout(this.timeout);
+        this.timeout = window.setTimeout(this.loop.bind(this), 0);
     }
     getGamepads() {
         return navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
     }
     loop() {
+        if (this.terminated) return;
         this.updateGamepadState();
-        this.timeout = setTimeout(this.loop.bind(this), 10);
+        // A 10 ms poll ran forever in the stock runtime, even with no external
+        // controller connected.  Poll at display cadence while a pad is active
+        // and back off while idle/backgrounded. Connection events wake the loop
+        // immediately, so controller support remains responsive.
+        const delay = document.hidden ? 500 : (this.gamepads.length ? 16 : 250);
+        this.timeout = setTimeout(this.loop.bind(this), delay);
     }
     updateGamepadState() {
         let gamepads = Array.from(this.getGamepads());

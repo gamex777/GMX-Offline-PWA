@@ -137,11 +137,15 @@ class EJS_GameManager {
         // Stock EmulatorJS 4.2.3 timing baseline. Do not override RetroArch's
         // audio clock, rate control, threaded-video mode, or frame delay from
         // the shell; those overrides were the primary source of N64 stutter.
+        const requestedAudioLatency = Number(this.EJS.config.audioLatency);
+        const audioLatency = Number.isFinite(requestedAudioLatency)
+            ? Math.max(32, Math.min(256, Math.round(requestedAudioLatency)))
+            : 64;
         let cfg = "autosave_interval = 60\n" +
             "screenshot_directory = \"/\"\n" +
             "block_sram_overwrite = false\n" +
             "video_gpu_screenshot = false\n" +
-            "audio_latency = 64\n" +
+            "audio_latency = " + audioLatency + "\n" +
             "video_top_portrait_viewport = true\n" +
             "video_vsync = true\n" +
             "video_smooth = false\n" +

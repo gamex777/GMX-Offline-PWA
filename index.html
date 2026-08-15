@@ -11,6 +11,22 @@
 <meta name="apple-mobile-web-app-title" content="CSD">
 <meta name="theme-color" content="#121212">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script>
+  // Android Chromium needs fewer continuously composited layers than iOS.
+  // The override is intentionally available for diagnostics without adding a UI setting.
+  (function() {
+    var android = /Android/i.test(navigator.userAgent || '');
+    var forced = '';
+    try { forced = new URLSearchParams(location.search).get('performance') || ''; } catch(e) {}
+    var balanced = forced === 'balanced' || (forced !== 'full' && android);
+    document.documentElement.setAttribute('data-csd-performance', balanced ? 'balanced' : 'full');
+    window.CSD_PERFORMANCE_PROFILE = {
+      name: balanced ? 'balanced' : 'full',
+      android: android,
+      audioLatency: balanced ? 96 : 64
+    };
+  })();
+</script>
         <!--Add your webpage scripts below-->
 
 <style>
@@ -2056,6 +2072,32 @@
   body.game-active #camera-bg { display: none !important; }
   body.game-active #volume-osd:not(.show) { display: none !important; }
   .xmb-fit-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Build 15 Android/A16 profile: retain the XMB composition while avoiding
+     expensive perpetual filters and compositor animations on mid-range GPUs. */
+  html[data-csd-performance="balanced"] .xmb-bg::before,
+  html[data-csd-performance="balanced"] .wave-line {
+    animation: none !important;
+  }
+  html[data-csd-performance="balanced"] .wave-line {
+    filter: none;
+    box-shadow: 0 -1px 3px rgba(var(--wave-color), 0.14);
+  }
+  html[data-csd-performance="balanced"] .wave-line::after { filter: none; opacity: .42; }
+  html[data-csd-performance="balanced"] .xmb-sheen { mix-blend-mode: normal; opacity: .52; }
+  html[data-csd-performance="balanced"] .xmb-game-bg { filter: brightness(.82); }
+  html[data-csd-performance="balanced"] #volume-osd,
+  html[data-csd-performance="balanced"] #install-popup {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  html[data-csd-performance="balanced"] #game-loading .game-boot-swoosh {
+    filter: none;
+  }
+  html[data-csd-performance="balanced"] #game-loading .game-boot-flash {
+    box-shadow: none;
+    opacity: 0 !important;
+  }
   #game-recovery {
     position: absolute; inset: 0; z-index: 120; display: none;
     place-items: center; align-content: center; gap: 8px;
@@ -2309,7 +2351,7 @@
                     <svg class="xmb-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                     <span>About</span>
                   </div>
-                  <div class="xmb-sub">Build 14.2.1 · EmulatorJS 4.2</div>
+                  <div class="xmb-sub">Build 15.0.0 · EmulatorJS 4.2</div>
                 </div>
               </div>
               <div id="xmb-help">
@@ -2606,9 +2648,13 @@
       function haptic(kind) {
         var fired = false;
         var vibrate = navigator.vibrate || navigator.webkitVibrate;
-        if (typeof vibrate === 'function') {
+        var now = (window.performance && performance.now) ? performance.now() : Date.now();
+        var minGap = window.CSD_PERFORMANCE_PROFILE && window.CSD_PERFORMANCE_PROFILE.name === 'balanced' ? 24 : 0;
+        haptic.lastAt = haptic.lastAt || 0;
+        if (typeof vibrate === 'function' && (!minGap || now - haptic.lastAt >= minGap)) {
           try {
             fired = vibrate.call(navigator, HAPTIC_PATTERNS[kind || 'tap'] || HAPTIC_PATTERNS.tap) || fired;
+            haptic.lastAt = now;
           } catch (e) {}
         }
         return rumbleConnectedController(kind) || fired;
@@ -2745,10 +2791,15 @@
         amount = Math.max(-1, Math.min(1, Number(amount) || 0));
         var pos = amount > 0 ? Math.round(32767 * amount) : 0;
         var neg = amount < 0 ? Math.round(32767 * -amount) : 0;
-        emu.pendingInputs[positiveIndex] = pos;
-        emu.pendingInputs[negativeIndex] = neg;
-        applyDirectInput(positiveIndex, pos);
-        applyDirectInput(negativeIndex, neg);
+        setAnalogueInput(positiveIndex, pos);
+        setAnalogueInput(negativeIndex, neg);
+      }
+
+      function setAnalogueInput(index, value) {
+        value = Math.max(0, Math.min(32767, Math.round(Number(value) || 0)));
+        if (emu.pendingInputs[index] === value) return;
+        emu.pendingInputs[index] = value;
+        if (emu.coreReady) applyDirectInput(index, value);
       }
 
       function sendStickVector(stickIndex, x, y) {
@@ -2762,8 +2813,7 @@
           var right = x > .45 ? 32767 : 0, left = x < -.45 ? 32767 : 0;
           var down = y > .45 ? 32767 : 0, up = y < -.45 ? 32767 : 0;
           [[20,right],[21,left],[22,down],[23,up]].forEach(function(pair) {
-            emu.pendingInputs[pair[0]] = pair[1];
-            applyDirectInput(pair[0], pair[1]);
+            setAnalogueInput(pair[0], pair[1]);
           });
         }
       }
@@ -3355,13 +3405,16 @@
           window.EJS_noAutoFocus = true;
           window.EJS_askBeforeExit = false;
           window.EJS_threads = false;
+          window.EJS_audioLatency = (window.CSD_PERFORMANCE_PROFILE && window.CSD_PERFORMANCE_PROFILE.audioLatency) || 64;
+          window.EJS_lightweightUI = true;
+          window.EJS_leanRuntime = true;
           window.EJS_forceLegacyCores = false;
           window.EJS_disableDatabases = IS_IOS;
           window.EJS_disableAutoLang = true;
           window.EJS_language = 'en-US';
           window.EJS_disableLocalStorage = true;
           window.EJS_DEBUG_XX = false;
-          window.CSD_RUNTIME_VERSION = '14.2.1';
+          window.CSD_RUNTIME_VERSION = '15.0.0';
           window.EJS_defaultOptions = { shader:'disabled' };
           window.EJS_hideSettings = ['shader','fps','slowMotion','fastForward','virtual-gamepad'];
           window.EJS_Buttons = {
@@ -3411,10 +3464,10 @@
 
           var script = document.createElement('script');
           script.id = 'csd-emulatorjs-loader';
-          script.src = './data/loader.js?v=14.2.1';
+          script.src = './data/loader.js?v=15.0.0';
           script.onerror = function() {
             restoreAudioContextBridge();
-            renderError('CORE BOOT FAILED', 'The local EmulatorJS runtime is missing. Upload the complete Build 14 folder.');
+            renderError('CORE BOOT FAILED', 'The local EmulatorJS runtime is missing. Upload the complete Build 15 folder.');
           };
           document.head.appendChild(script);
         } catch(e) {
@@ -3466,6 +3519,7 @@
         if (index === undefined) return;
         var analogue = index >= 16 && index <= 23;
         var value = isDown ? (analogue ? 32767 : 1) : 0;
+        if (emu.pendingInputs[index] === value) return;
         emu.pendingInputs[index] = value;
         if (emu.coreReady) applyDirectInput(index, value);
       }
@@ -4102,6 +4156,10 @@
       };
 
       function createIosHapticProxy(el, label) {
+        if (!IS_IOS) {
+          if (label) el.setAttribute('aria-label', label);
+          return el;
+        }
         var proxy = document.createElement('input');
         proxy.type = 'checkbox';
         proxy.setAttribute('switch', '');
@@ -4332,12 +4390,13 @@
           isCameraActive = false;
         } else {
           try {
+            var balancedCamera = window.CSD_PERFORMANCE_PROFILE && window.CSD_PERFORMANCE_PROFILE.name === 'balanced';
             cameraStream = await navigator.mediaDevices.getUserMedia({ 
               video: { 
                 facingMode: 'environment',
-                width: { ideal: 1920 },
-                height: { ideal: 1080 },
-                frameRate: { ideal: 60 } 
+                width: { ideal: balancedCamera ? 1280 : 1920 },
+                height: { ideal: balancedCamera ? 720 : 1080 },
+                frameRate: { ideal: balancedCamera ? 30 : 60 }
               },
               audio: false
             });
@@ -4485,7 +4544,7 @@
         }
       });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=14.2.1', { scope: './', updateViaCache: 'none' })
+        navigator.serviceWorker.register('./sw.js?v=15.0.0', { scope: './', updateViaCache: 'none' })
           .then((registration) => {
             console.log('[CSD SW] Registration successful with scope: ', registration.scope);
           })

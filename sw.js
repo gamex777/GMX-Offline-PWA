@@ -1,4 +1,4 @@
-const CACHE_NAME = 'csd-offline-v14.2.1';
+const CACHE_NAME = 'csd-offline-v15.0.0';
 const PRECACHE = [
   './',
   './index.html',
@@ -25,7 +25,6 @@ const PRECACHE = [
   './data/src/emulator.js',
   './data/src/gamepad.js',
   './data/src/nipplejs.js',
-  './data/src/shaders.js',
   './data/src/socket.io.min.js',
   './data/src/storage.js',
   './data/cores/reports/desmume2015.json',
