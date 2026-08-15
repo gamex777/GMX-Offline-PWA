@@ -1,4 +1,4 @@
-const CACHE_NAME = 'csd-offline-v15.0.0';
+const CACHE_NAME = 'csd-offline-v15.1.0';
 const PRECACHE = [
   './',
   './index.html',

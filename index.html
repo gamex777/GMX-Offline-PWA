@@ -23,7 +23,7 @@
     window.CSD_PERFORMANCE_PROFILE = {
       name: balanced ? 'balanced' : 'full',
       android: android,
-      audioLatency: balanced ? 96 : 64
+      audioLatency: 64
     };
   })();
 </script>
@@ -2098,6 +2098,10 @@
     box-shadow: none;
     opacity: 0 !important;
   }
+  html[data-csd-performance="balanced"] .mushroom { will-change: transform; }
+  html[data-csd-performance="balanced"] button.active:not(.bumper),
+  html[data-csd-performance="balanced"] .mushroom.dragging { filter: none; }
+  html[data-csd-performance="balanced"] .bumper.active::after { filter: none; opacity: .72; }
   #game-recovery {
     position: absolute; inset: 0; z-index: 120; display: none;
     place-items: center; align-content: center; gap: 8px;
@@ -2351,7 +2355,7 @@
                     <svg class="xmb-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                     <span>About</span>
                   </div>
-                  <div class="xmb-sub">Build 15.0.0 · EmulatorJS 4.2</div>
+                  <div class="xmb-sub">Build 15.1.0 · EmulatorJS 4.2</div>
                 </div>
               </div>
               <div id="xmb-help">
@@ -2645,19 +2649,27 @@
         } catch (e) { return false; }
       }
 
-      function haptic(kind) {
+      function haptic(kind, gameplay) {
         var fired = false;
         var vibrate = navigator.vibrate || navigator.webkitVibrate;
         var now = (window.performance && performance.now) ? performance.now() : Date.now();
         var minGap = window.CSD_PERFORMANCE_PROFILE && window.CSD_PERFORMANCE_PROFILE.name === 'balanced' ? 24 : 0;
+        var pattern = HAPTIC_PATTERNS[kind || 'tap'] || HAPTIC_PATTERNS.tap;
+        if (gameplay && minGap && typeof pattern === 'number') pattern = Math.min(pattern, 6);
         haptic.lastAt = haptic.lastAt || 0;
         if (typeof vibrate === 'function' && (!minGap || now - haptic.lastAt >= minGap)) {
           try {
-            fired = vibrate.call(navigator, HAPTIC_PATTERNS[kind || 'tap'] || HAPTIC_PATTERNS.tap) || fired;
+            fired = vibrate.call(navigator, pattern) || fired;
             haptic.lastAt = now;
           } catch (e) {}
         }
         return rumbleConnectedController(kind) || fired;
+      }
+
+      function gameplayHaptic(kind) {
+        // Input reaches the core first. Phone vibration/controller rumble follows
+        // on the next task so Android haptic IPC cannot delay the emulated press.
+        setTimeout(function(){ if (emu.running) haptic(kind, true); }, 0);
       }
 
       // Offline, synthesized XMB navigation sounds. Created only from a user gesture.
@@ -2783,8 +2795,6 @@
 
       // 3. Joystick drag physics + proportional analogue input.
       const mushrooms = document.querySelectorAll('.mushroom');
-      const maxDragRadius = 12;
-      const STICK_THRESHOLD = 4;
       var stickDir = {};
 
       function sendAnalogPair(positiveIndex, negativeIndex, amount) {
@@ -2821,8 +2831,17 @@
       mushrooms.forEach(function(stick, idx) {
         var stickTarget = createIosHapticProxy(stick, idx === 0 ? 'LEFT STICK' : 'RIGHT STICK');
         var activePointer = null, centerX = 0, centerY = 0;
+        var dragRadius = 12, deadZonePx = 1;
         var stickId = 'stick-' + (idx === 0 ? 'left' : 'right');
         stickDir[stickId] = null;
+
+        function normaliseStickAxis(delta) {
+          var magnitude = Math.abs(delta);
+          if (magnitude <= deadZonePx) return 0;
+          var available = Math.max(1, dragRadius - deadZonePx);
+          var value = Math.min(1, (magnitude - deadZonePx) / available);
+          return delta < 0 ? -value : value;
+        }
 
         function startDrag(e) {
           if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -2832,9 +2851,16 @@
           var rect = stickTarget.getBoundingClientRect();
           centerX = rect.left + rect.width / 2;
           centerY = rect.top + rect.height / 2;
+          dragRadius = Math.max(12, Math.min(18, rect.width * .30));
+          deadZonePx = Math.max(.8, dragRadius * .07);
           stick.classList.add('dragging', 'active');
-          haptic('soft');
           doDrag(e);
+          if (emu.running) {
+            gameplayHaptic('soft');
+            resumeGameAudioAfterInput();
+          } else {
+            haptic('soft');
+          }
         }
 
         function doDrag(e) {
@@ -2842,21 +2868,21 @@
           e.preventDefault();
           var dx = e.clientX - centerX, dy = e.clientY - centerY;
           var distance = Math.sqrt(dx * dx + dy * dy);
-          var clamped = Math.min(distance, maxDragRadius);
+          var clamped = Math.min(distance, dragRadius);
           var angle = Math.atan2(dy, dx);
           var tx = distance ? Math.cos(angle) * clamped : 0;
           var ty = distance ? Math.sin(angle) * clamped : 0;
-          stick.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+          stick.style.transform = 'translate3d(' + tx + 'px,' + ty + 'px,0)';
 
           if (emu.running) {
-            var normX = Math.abs(dx) < STICK_THRESHOLD ? 0 : Math.max(-1, Math.min(1, dx / maxDragRadius));
-            var normY = Math.abs(dy) < STICK_THRESHOLD ? 0 : Math.max(-1, Math.min(1, dy / maxDragRadius));
+            var normX = normaliseStickAxis(dx);
+            var normY = normaliseStickAxis(dy);
             sendStickVector(idx, normX, normY);
             return;
           }
 
           var newDir = null;
-          if (distance > STICK_THRESHOLD) {
+          if (distance > deadZonePx) {
             newDir = 'btn-' + (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
           }
           if (newDir !== stickDir[stickId]) {
@@ -2976,6 +3002,7 @@
       var gameUnlockContext = null;
       var cachedCoreAudioContext = null;
       var coreAudioUnlocked = false;
+      var lastInputAudioResumeAt = 0;
 
       function installAudioContextBridge() {
         // Do not replace AudioContext constructors. EmulatorJS must own each
@@ -3035,6 +3062,14 @@
             coreAudioUnlocked = true;
           }
         } catch(e) {}
+      }
+
+      function resumeGameAudioAfterInput() {
+        if (coreAudioUnlocked) return;
+        var now = (window.performance && performance.now) ? performance.now() : Date.now();
+        if (now - lastInputAudioResumeAt < 1000) return;
+        lastInputAudioResumeAt = now;
+        setTimeout(function(){ if (emu.running && !coreAudioUnlocked) resumeCoreAudio(); }, 0);
       }
 
       function setRecoveryOverlay(show, title, detail) {
@@ -3234,6 +3269,7 @@
         emu.recoveryReloading = false;
         emu.pendingInputs = Object.create(null);
         cachedCoreAudioContext = null; coreAudioUnlocked = false;
+        lastInputAudioResumeAt = 0;
         if (emu.recoveryTimer) { clearInterval(emu.recoveryTimer); emu.recoveryTimer = 0; }
         if (emu.frameWatchTimer) { clearInterval(emu.frameWatchTimer); emu.frameWatchTimer = 0; }
         document.body.classList.remove('game-active');
@@ -3299,8 +3335,14 @@
       function applyDirectInput(index, value) {
         try {
           var gm = window.EJS_emulator && window.EJS_emulator.gameManager;
-          if (!gm || typeof gm.simulateInput !== 'function') return false;
-          gm.simulateInput(0, Number(index), Number(value));
+          if (!gm) return false;
+          if (gm.functions && typeof gm.functions.simulateInput === 'function') {
+            gm.functions.simulateInput(0, Number(index), Number(value));
+          } else if (typeof gm.simulateInput === 'function') {
+            gm.simulateInput(0, Number(index), Number(value));
+          } else {
+            return false;
+          }
           return true;
         } catch(e) { return false; }
       }
@@ -3408,13 +3450,14 @@
           window.EJS_audioLatency = (window.CSD_PERFORMANCE_PROFILE && window.CSD_PERFORMANCE_PROFILE.audioLatency) || 64;
           window.EJS_lightweightUI = true;
           window.EJS_leanRuntime = true;
-          window.EJS_forceLegacyCores = false;
+          window.EJS_forceLegacyCores = !!(window.CSD_PERFORMANCE_PROFILE &&
+            window.CSD_PERFORMANCE_PROFILE.name === 'balanced' && def.key === 'n64');
           window.EJS_disableDatabases = IS_IOS;
           window.EJS_disableAutoLang = true;
           window.EJS_language = 'en-US';
           window.EJS_disableLocalStorage = true;
           window.EJS_DEBUG_XX = false;
-          window.CSD_RUNTIME_VERSION = '15.0.0';
+          window.CSD_RUNTIME_VERSION = '15.1.0';
           window.EJS_defaultOptions = { shader:'disabled' };
           window.EJS_hideSettings = ['shader','fps','slowMotion','fastForward','virtual-gamepad'];
           window.EJS_Buttons = {
@@ -3464,7 +3507,7 @@
 
           var script = document.createElement('script');
           script.id = 'csd-emulatorjs-loader';
-          script.src = './data/loader.js?v=15.0.0';
+          script.src = './data/loader.js?v=15.1.0';
           script.onerror = function() {
             restoreAudioContextBridge();
             renderError('CORE BOOT FAILED', 'The local EmulatorJS runtime is missing. Upload the complete Build 15 folder.');
@@ -4123,10 +4166,12 @@
       function pressButton(id) {
         if (held[id]) return;
         held[id] = true;
-        haptic(NAV_REPEAT.indexOf(id) > -1 ? 'tick' : 'tap');
+        var hapticKind = NAV_REPEAT.indexOf(id) > -1 ? 'tick' : 'tap';
         if (emu.running) {
           sendInput(id, true);
+          gameplayHaptic(hapticKind);
         } else {
+          haptic(hapticKind);
           doNavAction(id);
           if (NAV_REPEAT.indexOf(id) > -1) {
             repeatTimers[id] = setTimeout(function rep() {
@@ -4201,11 +4246,15 @@
         function down(e) {
           if (e.pointerType === 'mouse' && e.button !== 0) return;
           e.preventDefault(); e.stopPropagation();
-          if (emu.running) primeGameAudio(); else XmbAudio.ensure();
           pointerId = e.pointerId;
+          pressButton(gameId);
           try { inputTarget.setPointerCapture(e.pointerId); } catch(ignore) {}
           el.classList.add('active');
-          pressButton(gameId);
+          if (emu.running) {
+            resumeGameAudioAfterInput();
+          } else {
+            XmbAudio.ensure();
+          }
         }
         function up(e) {
           if (pointerId !== null && e.pointerId !== undefined && e.pointerId !== pointerId) return;
@@ -4236,8 +4285,11 @@
         var gameBtn = KEYCODE_MAP[code]; 
         if (gameBtn) {
           if (emu.running) {
-            if (!held[gameBtn]) { held[gameBtn] = true; haptic(NAV_REPEAT.indexOf(gameBtn) > -1 ? 'tick' : 'tap'); }
-            sendInput(gameBtn, true);
+            if (!held[gameBtn]) {
+              held[gameBtn] = true;
+              sendInput(gameBtn, true);
+              gameplayHaptic(NAV_REPEAT.indexOf(gameBtn) > -1 ? 'tick' : 'tap');
+            }
           } else {
             if (!osHeld[gameBtn]) { osHeld[gameBtn] = true; pressButton(gameBtn); }
           }
@@ -4544,7 +4596,7 @@
         }
       });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=15.0.0', { scope: './', updateViaCache: 'none' })
+        navigator.serviceWorker.register('./sw.js?v=15.1.0', { scope: './', updateViaCache: 'none' })
           .then((registration) => {
             console.log('[CSD SW] Registration successful with scope: ', registration.scope);
           })

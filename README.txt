@@ -1,11 +1,20 @@
-CSD Offline PWA — Build 15.0
+CSD Offline PWA — Build 15.1
+
+A16 control-latency repair
+- Reduces the physical joystick dead zone from 33% of its travel to approximately 7%, then rescales the remaining travel to the full analogue range.
+- Delivers button and joystick input to the emulator before audio-resume, vibration, controller-rumble, or visual feedback work.
+- Uses the direct libretro input bridge for normal gameplay controls and avoids the extra EmulatorJS menu/netplay routing layer.
+- Keeps Android gameplay haptics but shortens phone vibration to a maximum of 6 ms and defers it until after the input call.
+- Promotes only the two joystick knobs to compositor layers and removes active-button filter repaints in the balanced Android profile.
+- Uses the lightweight legacy N64 renderer on the balanced A16/Android profile while keeping the modern core path for other systems.
+- Restores the stock 64 ms audio buffer so sound response does not add another 32 ms of perceived control delay.
 
 Galaxy A16 5G / Android performance repair
 - Replaces EmulatorJS's permanent 10 ms external-gamepad polling with adaptive polling: 16 ms only while a controller is connected, 250 ms while idle, and 500 ms in the background.
 - Terminates the gamepad loop when returning HOME, preventing one additional polling loop from accumulating after every game launch.
 - Uses direct shell controls on Android instead of creating seventeen transparent iOS-native switch overlays.
 - Adds a balanced Android compositor profile that keeps the PSP/XMB design but freezes perpetual star/wave effects and removes the heaviest blur/blend layers.
-- Uses a 96 ms Android audio buffer to reduce underruns while retaining native emulation speed, VSync, and disabled smoothing/shaders.
+- Retains native emulation speed, VSync, and disabled smoothing/shaders.
 - Suppresses duplicate analogue input calls and removes the unused 140 KB shader catalog from the launch path.
 - Reduces the optional camera background from 1080p60 to 720p30 on Android and stops it before gameplay as before.
 
@@ -27,8 +36,8 @@ Controls and stability
 - Retains the corrected N64 mapping, proportional left stick, C-button right stick, pointer capture, pressed states, haptics, same-document HOME transition, service-worker no-reload behavior, and WebGL context-loss recovery.
 
 Deployment
-1. Replace every hosted file with the complete Build 15.0 folder.
-2. Confirm sw.js starts with csd-offline-v15.0.0.
+1. Replace every hosted file with the complete Build 15.1 folder.
+2. Confirm sw.js starts with csd-offline-v15.1.0.
 3. Wait for GitHub Pages deployment.
 4. Open reset.html once. ROMs stored in IndexedDB are preserved.
 5. Delete and re-add the iPhone Home Screen icon.

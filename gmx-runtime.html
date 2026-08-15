@@ -172,16 +172,16 @@
     window.EJS_noAutoFocus=true;
     window.EJS_askBeforeExit=false;
     window.EJS_threads=false; // GitHub Pages cannot provide the required COOP/COEP headers reliably on iOS.
-    window.EJS_audioLatency=IS_ANDROID?96:64;
+    window.EJS_audioLatency=64;
     window.EJS_lightweightUI=true;
     window.EJS_leanRuntime=true;
-    window.EJS_forceLegacyCores=false;
+    window.EJS_forceLegacyCores=IS_ANDROID&&sys.scheme==='n64';
     window.EJS_disableDatabases=IS_IOS;
     window.EJS_disableAutoLang=true;
     window.EJS_language='en-US';
     window.EJS_disableLocalStorage=true;
     window.EJS_DEBUG_XX=false;
-    window.GMX_RUNTIME_VERSION='15.0.0';
+    window.GMX_RUNTIME_VERSION='15.1.0';
     window.EJS_defaultOptions={'shader':'disabled'};
     window.EJS_hideSettings=['shader','fps','slowMotion','fastForward','virtual-gamepad'];
     window.EJS_Buttons={
